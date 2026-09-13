@@ -12,6 +12,7 @@
     "dev": "vite",
     "dev:electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && electron .\"",
     "build": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder",
+    "build:win": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder --win --x64",
     "build:web": "tsc -p tsconfig.json --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
@@ -51,7 +52,8 @@
     "appId": "com.moltenmagnolia.inventory",
     "productName": "MM3D Inventory",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -65,7 +67,10 @@
         "to": "templates"
       }
     ],
+    "publish": null,
     "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
       "target": [
         {
           "target": "nsis",
@@ -83,7 +88,13 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "MM3D Inventory",
+      "uninstallDisplayName": "MM3D Inventory",
+      "artifactName": "MM3D-Inventory-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MM3D-Inventory-Portable-${version}.${ext}"
     }
   }
 }

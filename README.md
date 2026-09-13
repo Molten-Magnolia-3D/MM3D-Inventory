@@ -2,6 +2,17 @@
 
 Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations, kit recipes, and filament spools.
 
+## Download for Windows
+
+Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)**:
+
+- **MM3D-Inventory-Setup-1.0.0.exe** — installer (recommended)
+- **MM3D-Inventory-Portable-1.0.0.exe** — no install; double-click to run
+
+If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build Windows app** run, and download the `MM3D-Inventory-Windows` artifact.
+
+Windows SmartScreen may warn because the app is not code-signed yet. Choose **More info** → **Run anyway**.
+
 Kits are recipes, not finished goods. Selling a kit pulls the shared and unique parts (and any filament grams you pick). There is no “build into stock” step and no unbuild.
 
 This repository is standalone. Filament tracking is inspired by SpoolmeterX, but the code here is new.
@@ -48,7 +59,7 @@ npm run dev:electron
 npm run build
 ```
 
-`electron-builder` writes NSIS and portable builds under `release/`. Run that command on a Windows machine (or a CI image with Windows targets) for the installers.
+`electron-builder` writes NSIS and portable builds under `release/`. CI also builds these on every push so you can download them from GitHub Releases.
 
 ## First-time shop setup
 
