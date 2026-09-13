@@ -1,9 +1,24 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
+function sqlJsDefaultExport(): Plugin {
+  return {
+    name: "sql-js-default-export",
+    enforce: "pre",
+    transform(code, id) {
+      if (!id.includes("sql-wasm") || !id.endsWith(".js")) return null;
+      if (code.includes("export default initSqlJs")) return null;
+      return {
+        code: `${code}\nexport default initSqlJs;\n`,
+        map: null,
+      };
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [sqlJsDefaultExport(), react()],
   base: "./",
   resolve: {
     alias: {

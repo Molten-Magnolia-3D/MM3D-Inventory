@@ -59,14 +59,17 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const bytes = await platform.loadDb();
-        const created = await Inventory.create(bytes, (data) => platform.saveDb(data), (file) =>
-          platform.locateWasm(file),
+        const created = await Inventory.create(
+          bytes,
+          (data) => platform.saveDb(data),
+          (file) => platform.locateWasm(file),
         );
         if (!cancelled) {
           setInv(created);
           setReady(true);
         }
       } catch (err) {
+        console.error("MM3D failed to open database", err);
         if (!cancelled) setError((err as Error).message);
       }
     })();

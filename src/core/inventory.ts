@@ -1,4 +1,4 @@
-import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
+import type { Database, SqlJsStatic } from "sql.js";
 import { hashPassword, validEmail, verifyPassword } from "./auth";
 import { Db } from "./db";
 import {
@@ -20,6 +20,7 @@ import type {
   Kit,
   KitSale,
   KitView,
+  LeafRequirement,
   Location,
   LocationArea,
   LocationNode,
@@ -39,15 +40,59 @@ import type {
 import { newId, normalizeBarcode, nowIso, roundGrams, roundMoney, slugSku } from "./util";
 
 let sqlModule: SqlJsStatic | null = null;
+let sqlLoading: Promise<SqlJsStatic> | null = null;
+
+function wasmUrl(file: string): string {
+  if (typeof window !== "undefined" && window.location.protocol === "file:") {
+    return `./${file.replace(/^\.\//, "")}`;
+  }
+  return `/${file.replace(/^\//, "")}`;
+}
+
+async function loadScript(src: string): Promise<void> {
+  const w = window as Window & { initSqlJs?: unknown };
+  if (w.initSqlJs) return;
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
 
 export async function loadSql(
   locateFile?: (file: string) => string,
 ): Promise<SqlJsStatic> {
   if (sqlModule) return sqlModule;
-  sqlModule = await initSqlJs({
-    locateFile: locateFile ?? ((file) => `/${file}`),
-  });
-  return sqlModule;
+  if (sqlLoading) return sqlLoading;
+  sqlLoading = (async () => {
+    const locator = locateFile ?? ((file) => wasmUrl(file));
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      const w = window as Window & {
+        initSqlJs?: (cfg: { locateFile: (f: string) => string }) => Promise<SqlJsStatic>;
+      };
+      if (!w.initSqlJs) {
+        await loadScript(wasmUrl("sql-wasm-browser.js"));
+      }
+      if (!w.initSqlJs) throw new Error("sql.js failed to load in the browser.");
+      sqlModule = await w.initSqlJs({ locateFile: locator });
+      return sqlModule;
+    }
+    const spec = "sql.js";
+    const mod = (await import(/* @vite-ignore */ spec)) as {
+      default: (cfg: { locateFile: (f: string) => string }) => Promise<SqlJsStatic>;
+    };
+    sqlModule = await mod.default({ locateFile: locator });
+    return sqlModule;
+  })();
+  try {
+    return await sqlLoading;
+  } catch (err) {
+    sqlLoading = null;
+    throw err;
+  }
 }
 
 export function resetSqlModule(): void {
@@ -1105,6 +1150,46 @@ export class Inventory {
     this.markDirty();
   }
 
+  autoAllocateFilament(leaves: LeafRequirement[], kitQty: number): FilamentPick[] {
+    const needByMaterial = new Map<string, number>();
+    let unspecified = 0;
+    for (const leaf of leaves) {
+      if (leaf.filamentGrams <= 0) continue;
+      const grams = leaf.filamentGrams * kitQty;
+      if (leaf.filamentMaterial) {
+        const key = leaf.filamentMaterial.toUpperCase();
+        needByMaterial.set(key, (needByMaterial.get(key) ?? 0) + grams);
+      } else unspecified += grams;
+    }
+    const picks: FilamentPick[] = [];
+    const take = (wanted: number, spools: Spool[]) => {
+      let remaining = wanted;
+      const sorted = [...spools].sort((a, b) => b.remainingGrams - a.remainingGrams);
+      for (const spool of sorted) {
+        if (remaining <= 0) break;
+        const usable = Math.max(0, spool.remainingGrams);
+        if (usable <= 0) continue;
+        const grams = Math.min(usable, remaining);
+        picks.push({ spoolId: spool.id, grams });
+        remaining -= grams;
+      }
+      if (remaining > 0 && sorted[0]) {
+        const last = picks.find((p) => p.spoolId === sorted[0]!.id);
+        if (last) last.grams += remaining;
+        else picks.push({ spoolId: sorted[0].id, grams: remaining });
+      }
+    };
+    const active = this.listSpools(false);
+    for (const [material, grams] of needByMaterial) {
+      take(
+        grams,
+        active.filter((s) => s.material.toUpperCase() === material),
+      );
+    }
+    if (unspecified > 0) take(unspecified, active);
+    return picks;
+  }
+
   autoAllocate(itemId: string, qty: number): StockAllocation[] {
     const lots = this.db.all<StockRow>(
       `SELECT item_id as itemId, location_id as locationId, qty, updated_at as updatedAt FROM stock WHERE item_id = ?`,
@@ -1149,7 +1234,10 @@ export class Inventory {
       }
 
       const neededGrams = view.leaves.reduce((s, l) => s + l.filamentGrams * input.qty, 0);
-      const picks = input.filament ?? [];
+      let picks = (input.filament ?? []).filter((p) => p.grams > 0);
+      if (picks.length === 0 && neededGrams > 0) {
+        picks = this.autoAllocateFilament(view.leaves, input.qty);
+      }
       const pickedGrams = picks.reduce((s, p) => s + p.grams, 0);
       if (neededGrams > 0 && Math.abs(pickedGrams - neededGrams) > 0.05) {
         warnings.push({

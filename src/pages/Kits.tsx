@@ -194,7 +194,10 @@ export function KitDetailPage() {
           <button className="btn secondary" onClick={() => setLineOpen(true)}>
             Add BOM line
           </button>
-          <button className="btn" onClick={() => setSellOpen(true)}>
+          <button className="btn" onClick={() => {
+            setPicks(api.autoAllocateFilament(current.leaves, Number(qty) || 1));
+            setSellOpen(true);
+          }}>
             Sell
           </button>
         </div>

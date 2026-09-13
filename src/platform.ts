@@ -82,7 +82,7 @@ export function createPlatform(): Platform {
       deviceInfo: () => api.deviceInfo(),
       saveFile: (filename, data, mime) => api.saveFile(filename, data, mime),
       openFile: () => api.openFile(),
-      locateWasm: (file) => `./${file}`,
+    locateWasm: (file) => `/${file.replace(/^\//, "")}`,
     };
   }
 

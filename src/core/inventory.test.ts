@@ -83,6 +83,15 @@ describe("inventory v1", () => {
     expect(inv.kitView(kit.id)!.canMake).toBe(4);
   });
 
+  it("auto-picks filament grams on sell when none are provided", async () => {
+    const inv = await freshInventory();
+    loadSampleWorkshop(inv);
+    const kit = inv.listKits().find((k) => k.sku === "KIT-HARRIER-231")!;
+    const black = inv.listSpools().find((s) => s.barcode === "SP-PLA-BLK-01")!;
+    inv.sellKit({ kitId: kit.id, qty: 1, note: "walk-in" });
+    expect(inv.getSpool(black.id)!.remainingGrams).toBe(628);
+  });
+
   it("looks up a spool barcode and logs usage", async () => {
     const inv = await freshInventory();
     loadSampleWorkshop(inv);
