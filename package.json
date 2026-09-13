@@ -1,0 +1,100 @@
+{
+  "name": "mm3d-inventory",
+  "productName": "MM3D Inventory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Windows desktop inventory for Molten Magnolia 3D — parts, kits, locations, and filament.",
+  "author": "Molten Magnolia 3D",
+  "license": "UNLICENSED",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && electron .\"",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder",
+    "build:win": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder --win --x64",
+    "build:web": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "node scripts/copy-wasm.js"
+  },
+  "dependencies": {
+    "firebase": "^11.6.0",
+    "jsbarcode": "^3.12.1",
+    "jspdf": "^3.0.1",
+    "lucide-react": "^0.511.0",
+    "papaparse": "^5.5.2",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.1",
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.16",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.21",
+    "@types/react-dom": "^18.3.7",
+    "@types/sql.js": "^1.4.9",
+    "@vitejs/plugin-react": "^4.5.2",
+    "concurrently": "^9.1.2",
+    "electron": "^35.2.1",
+    "electron-builder": "^26.0.12",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.moltenmagnolia.inventory",
+    "productName": "MM3D Inventory",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "templates/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "templates",
+        "to": "templates"
+      }
+    ],
+    "publish": null,
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "MM3D Inventory",
+      "uninstallDisplayName": "MM3D Inventory",
+      "artifactName": "MM3D-Inventory-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MM3D-Inventory-Portable-${version}.${ext}"
+    }
+  }
+}
