@@ -37,33 +37,68 @@ import type {
   StockWarning,
   User,
 } from "./types";
-import { newId, normalizeBarcode, nowIso, roundGrams, roundMoney, slugSku } from "./util";
+import {
+  asUint8Array,
+  newId,
+  normalizeBarcode,
+  nowIso,
+  roundGrams,
+  roundMoney,
+  slugSku,
+  sqlAssetUrl,
+  withTimeout,
+} from "./util";
 
 let sqlModule: SqlJsStatic | null = null;
 let sqlLoading: Promise<SqlJsStatic> | null = null;
 
+const BROWSER_WASM = "sql-wasm-browser.wasm";
+const BROWSER_JS = "sql-wasm-browser.js";
+const SQL_BOOT_MS = 20_000;
+
 function wasmUrl(file: string): string {
-  if (typeof window !== "undefined" && window.location.protocol === "file:") {
-    return `./${file.replace(/^\.\//, "")}`;
-  }
-  return `/${file.replace(/^\//, "")}`;
+  return sqlAssetUrl(file);
 }
 
 async function loadScript(src: string): Promise<void> {
   const w = window as Window & { initSqlJs?: unknown };
   if (w.initSqlJs) return;
-  await new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(script);
-  });
+  await withTimeout(
+    new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    }),
+    12_000,
+    `Timed out loading ${src}`,
+  );
+}
+
+async function fetchWasm(locator: (file: string) => string): Promise<Uint8Array> {
+  const names = [BROWSER_WASM, "sql-wasm.wasm"];
+  const errors: string[] = [];
+  for (const name of names) {
+    const url = locator(name);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        errors.push(`${url} (${res.status})`);
+        continue;
+      }
+      return new Uint8Array(await res.arrayBuffer());
+    } catch (err) {
+      errors.push(`${url} (${(err as Error).message})`);
+    }
+  }
+  throw new Error(`Could not load the SQLite engine. Tried: ${errors.join("; ")}`);
 }
 
 export async function loadSql(
   locateFile?: (file: string) => string,
+  wasmBinary?: Uint8Array | ArrayBuffer | null,
 ): Promise<SqlJsStatic> {
   if (sqlModule) return sqlModule;
   if (sqlLoading) return sqlLoading;
@@ -71,13 +106,23 @@ export async function loadSql(
     const locator = locateFile ?? ((file) => wasmUrl(file));
     if (typeof window !== "undefined" && typeof document !== "undefined") {
       const w = window as Window & {
-        initSqlJs?: (cfg: { locateFile: (f: string) => string }) => Promise<SqlJsStatic>;
+        initSqlJs?: (cfg: {
+          locateFile: (f: string) => string;
+          wasmBinary?: ArrayBuffer | Uint8Array;
+        }) => Promise<SqlJsStatic>;
       };
+      const binary = asUint8Array(wasmBinary) ?? (await fetchWasm(locator));
       if (!w.initSqlJs) {
-        await loadScript(wasmUrl("sql-wasm-browser.js"));
+        await loadScript(locator(BROWSER_JS) || wasmUrl(BROWSER_JS));
       }
       if (!w.initSqlJs) throw new Error("sql.js failed to load in the browser.");
-      sqlModule = await w.initSqlJs({ locateFile: locator });
+      // Pass wasmBinary so Chromium never fetch()es a file:// WASM URL (that hang
+      // is what left the shop ledger screen spinning in the packaged app).
+      sqlModule = await withTimeout(
+        w.initSqlJs({ locateFile: locator, wasmBinary: binary }),
+        SQL_BOOT_MS,
+        "Timed out starting SQLite. Close the app and try again, or reinstall.",
+      );
       return sqlModule;
     }
     const spec = "sql.js";
@@ -261,9 +306,11 @@ export class Inventory {
     bytes: Uint8Array | null,
     persist: (bytes: Uint8Array) => Promise<void> | void,
     locateFile?: (file: string) => string,
+    wasmBinary?: Uint8Array | ArrayBuffer | null,
   ): Promise<Inventory> {
-    const SQL = await loadSql(locateFile);
-    const sqlDb = bytes?.length ? new SQL.Database(bytes) : new SQL.Database();
+    const SQL = await loadSql(locateFile, wasmBinary);
+    const data = asUint8Array(bytes);
+    const sqlDb = data?.length ? new SQL.Database(data) : new SQL.Database();
     const inv = new Inventory(sqlDb, persist);
     inv.migrate();
     return inv;

@@ -41,20 +41,23 @@ const links = [
 
 export default function App() {
   const { ready, error, inv, user, online, lock } = useInventory();
-  if (!ready) {
-    return (
-      <div className="login-screen">
-        <div className="login-card">Opening the shop ledger…</div>
-      </div>
-    );
-  }
   if (error && !inv) {
     return (
       <div className="login-screen">
         <div className="login-card">
           <h1>Could not open the database</h1>
-          <p>{error}</p>
+          <p className="lede">{error}</p>
+          <button type="button" className="btn" onClick={() => window.location.reload()}>
+            Try again
+          </button>
         </div>
+      </div>
+    );
+  }
+  if (!ready) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">Opening the shop ledger…</div>
       </div>
     );
   }

@@ -6,8 +6,8 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)**:
 
-- **MM3D-Inventory-Setup-1.0.0.exe** — installer (recommended)
-- **MM3D-Inventory-Portable-1.0.0.exe** — no install; double-click to run
+- **MM3D-Inventory-Setup-1.0.1.exe** — installer (recommended)
+- **MM3D-Inventory-Portable-1.0.1.exe** — no install; double-click to run
 
 If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build Windows app** run, and download the `MM3D-Inventory-Windows` artifact.
 

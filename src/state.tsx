@@ -10,6 +10,7 @@ import {
 import { Inventory } from "./core/inventory";
 import type { DeviceLock, User } from "./core/types";
 import { bytesFromSnapshot, FirebaseCloud, syncNow, type CloudBackend } from "./core/sync";
+import { asUint8Array, withTimeout } from "./core/util";
 import { createPlatform, type Platform } from "./platform";
 
 interface Ctx {
@@ -58,11 +59,20 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const bytes = await platform.loadDb();
-        const created = await Inventory.create(
-          bytes,
-          (data) => platform.saveDb(data),
-          (file) => platform.locateWasm(file),
+        const [bytes, wasmBinary] = await withTimeout(
+          Promise.all([platform.loadDb(), platform.loadWasm()]),
+          15_000,
+          "Timed out reading the shop ledger files from disk.",
+        );
+        const created = await withTimeout(
+          Inventory.create(
+            asUint8Array(bytes),
+            (data) => platform.saveDb(data),
+            (file) => platform.locateWasm(file),
+            wasmBinary,
+          ),
+          25_000,
+          "Timed out opening the shop ledger. If this keeps happening, reinstall the app.",
         );
         if (!cancelled) {
           setInv(created);
@@ -70,7 +80,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("MM3D failed to open database", err);
-        if (!cancelled) setError((err as Error).message);
+        if (!cancelled) setError((err as Error).message || String(err));
       }
     })();
     return () => {
@@ -103,10 +113,12 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         if (result.pulled) {
           const remote = await cloud.pullSnapshot();
           if (remote) {
+            const wasmBinary = await platform.loadWasm();
             const next = await Inventory.create(
               bytesFromSnapshot(remote),
               (data) => platform.saveDb(data),
               (file) => platform.locateWasm(file),
+              wasmBinary,
             );
             setInv(next);
           }

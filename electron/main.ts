@@ -1,15 +1,52 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from "electron";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { fileInDist } from "./paths";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = !app.isPackaged;
+const SCHEME = "mm3d";
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
 
 function userDataFile(name: string) {
   return path.join(app.getPath("userData"), name);
+}
+
+function distDir() {
+  return path.join(__dirname, "..", "dist");
+}
+
+function findWasmFile(): string {
+  const names = ["sql-wasm-browser.wasm", "sql-wasm.wasm"];
+  const dirs = [
+    distDir(),
+    path.join(__dirname, "..", "public"),
+    path.join(process.cwd(), "public"),
+    path.join(process.cwd(), "node_modules", "sql.js", "dist"),
+    path.join(__dirname, "..", "node_modules", "sql.js", "dist"),
+  ];
+  for (const dir of dirs) {
+    for (const name of names) {
+      const candidate = path.join(dir, name);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+  throw new Error("SQLite WASM file was not packaged with the app.");
 }
 
 function deviceId(): string {
@@ -18,6 +55,18 @@ function deviceId(): string {
   const id = randomUUID();
   fs.writeFileSync(file, id, "utf8");
   return id;
+}
+
+function registerRendererProtocol() {
+  protocol.handle(SCHEME, (request) => {
+    const url = new URL(request.url);
+    const pathname = url.pathname === "/" || url.pathname === "" ? "/index.html" : url.pathname;
+    const filePath = fileInDist(pathname, distDir());
+    if (!filePath || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      return new Response("Not found", { status: 404, headers: { "content-type": "text/plain" } });
+    }
+    return net.fetch(pathToFileURL(filePath).href);
+  });
 }
 
 function createWindow() {
@@ -40,7 +89,7 @@ function createWindow() {
     win.loadURL("http://127.0.0.1:5173");
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+    win.loadURL(`${SCHEME}://app/index.html`);
   }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -50,6 +99,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (!isDev) registerRendererProtocol();
+
   ipcMain.handle("mm3d:load-db", async () => {
     const file = userDataFile("mm3d-inventory.sqlite");
     if (!fs.existsSync(file)) return null;
@@ -60,6 +111,8 @@ app.whenReady().then(() => {
     const file = userDataFile("mm3d-inventory.sqlite");
     fs.writeFileSync(file, Buffer.from(data));
   });
+
+  ipcMain.handle("mm3d:load-wasm", async () => fs.readFileSync(findWasmFile()));
 
   ipcMain.handle("mm3d:device-info", async () => ({
     id: deviceId(),

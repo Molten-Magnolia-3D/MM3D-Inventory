@@ -1,9 +1,11 @@
 import type { DeviceInfo } from "./core/types";
+import { asUint8Array, sqlAssetUrl } from "./core/util";
 
 export interface Platform {
   isElectron: boolean;
   loadDb(): Promise<Uint8Array | null>;
   saveDb(data: Uint8Array): Promise<void>;
+  loadWasm(): Promise<Uint8Array | null>;
   deviceInfo(): Promise<DeviceInfo>;
   saveFile(filename: string, data: Uint8Array | string, mime?: string): Promise<boolean>;
   openFile(): Promise<{ name: string; data: Uint8Array } | null>;
@@ -12,8 +14,9 @@ export interface Platform {
 
 type ElectronApi = {
   isElectron: true;
-  loadDb: () => Promise<Uint8Array | null>;
+  loadDb: () => Promise<unknown>;
   saveDb: (data: Uint8Array) => Promise<void>;
+  loadWasm: () => Promise<unknown>;
   deviceInfo: () => Promise<DeviceInfo>;
   saveFile: (filename: string, data: Uint8Array | string, mime?: string) => Promise<boolean>;
   openFile: () => Promise<{ name: string; data: Uint8Array } | null>;
@@ -72,17 +75,36 @@ function download(filename: string, data: Uint8Array | string, mime = "applicati
   URL.revokeObjectURL(url);
 }
 
+async function fetchPublicWasm(): Promise<Uint8Array | null> {
+  for (const name of ["sql-wasm-browser.wasm", "sql-wasm.wasm"]) {
+    try {
+      const res = await fetch(sqlAssetUrl(name));
+      if (res.ok) return new Uint8Array(await res.arrayBuffer());
+    } catch {
+      /* try the next name */
+    }
+  }
+  return null;
+}
+
 export function createPlatform(): Platform {
   if (window.mm3d?.isElectron) {
     const api = window.mm3d;
     return {
       isElectron: true,
-      loadDb: () => api.loadDb(),
+      async loadDb() {
+        return asUint8Array(await api.loadDb());
+      },
       saveDb: (data) => api.saveDb(data),
+      async loadWasm() {
+        const fromMain = asUint8Array(await api.loadWasm());
+        if (fromMain?.length) return fromMain;
+        return fetchPublicWasm();
+      },
       deviceInfo: () => api.deviceInfo(),
       saveFile: (filename, data, mime) => api.saveFile(filename, data, mime),
       openFile: () => api.openFile(),
-    locateWasm: (file) => `/${file.replace(/^\//, "")}`,
+      locateWasm: (file) => sqlAssetUrl(file),
     };
   }
 
@@ -90,11 +112,12 @@ export function createPlatform(): Platform {
     isElectron: false,
     async loadDb() {
       const bytes = await idbGet("db");
-      return bytes instanceof Uint8Array ? bytes : null;
+      return asUint8Array(bytes);
     },
     async saveDb(data) {
       await idbSet("db", data);
     },
+    loadWasm: () => fetchPublicWasm(),
     async deviceInfo() {
       let id = (await idbGet("device-id")) as string | null;
       if (!id) {
@@ -121,6 +144,6 @@ export function createPlatform(): Platform {
         input.click();
       });
     },
-    locateWasm: (file) => `/${file}`,
+    locateWasm: (file) => sqlAssetUrl(file),
   };
 }

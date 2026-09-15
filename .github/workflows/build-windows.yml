@@ -42,8 +42,8 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: MM3D Inventory 1.0.0
+          tag_name: v1.0.1
+          name: MM3D Inventory 1.0.1
           draft: false
           make_latest: true
           fail_on_unmatched_files: true
@@ -53,8 +53,8 @@ jobs:
           body: |
             Windows builds of **MM3D Inventory**.
 
-            - **MM3D-Inventory-Setup-1.0.0.exe** — installer (recommended)
-            - **MM3D-Inventory-Portable-1.0.0.exe** — run without installing
+            - **MM3D-Inventory-Setup-1.0.1.exe** — installer (recommended)
+            - **MM3D-Inventory-Portable-1.0.1.exe** — run without installing
 
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 

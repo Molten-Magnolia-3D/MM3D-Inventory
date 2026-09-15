@@ -46,3 +46,49 @@ export function base64ToBytes(b64: string): Uint8Array {
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
   return out;
 }
+
+/** Coerce IPC Buffer clones, ArrayBuffers, and typed arrays into Uint8Array. */
+export function asUint8Array(data: unknown): Uint8Array | null {
+  if (data == null) return null;
+  if (data instanceof Uint8Array) return data;
+  if (data instanceof ArrayBuffer) return new Uint8Array(data);
+  if (ArrayBuffer.isView(data)) {
+    const view = data as ArrayBufferView;
+    return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+  }
+  if (Array.isArray(data)) return new Uint8Array(data as number[]);
+  if (typeof data === "object" && data !== null && "data" in data) {
+    const inner = (data as { data: unknown }).data;
+    if (inner instanceof Uint8Array) return inner;
+    if (Array.isArray(inner)) return new Uint8Array(inner as number[]);
+  }
+  return null;
+}
+
+export function sqlAssetUrl(file: string, baseHref?: string): string {
+  const name = file.replace(/^(\.\/|\/)+/, "");
+  const base = baseHref ?? (typeof window !== "undefined" ? window.location.href : "./");
+  try {
+    return new URL(name, base).toString();
+  } catch {
+    return `./${name}`;
+  }
+}
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  message: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
