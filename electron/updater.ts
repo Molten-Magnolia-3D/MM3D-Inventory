@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import electronUpdater from "electron-updater";
-import { isPortableEnv } from "./portable";
+import { isPortableEnv } from "./portable.js";
 
 const { autoUpdater } = electronUpdater;
 

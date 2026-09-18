@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { UpdateStatus } from "./updater";
+import type { UpdateStatus } from "./updater.js";
 
 contextBridge.exposeInMainWorld("mm3d", {
   isElectron: true,

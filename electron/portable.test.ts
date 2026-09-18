@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPortableEnv } from "./portable";
+import { isPortableEnv } from "./portable.js";
 
 describe("portable detection", () => {
   it("treats electron-builder portable env vars as portable", () => {

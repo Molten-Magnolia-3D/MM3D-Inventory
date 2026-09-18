@@ -1,7 +1,7 @@
 {
   "name": "mm3d-inventory",
   "productName": "MM3D Inventory",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Windows desktop inventory for Molten Magnolia 3D — parts, kits, locations, and filament.",
   "author": "Molten Magnolia 3D",

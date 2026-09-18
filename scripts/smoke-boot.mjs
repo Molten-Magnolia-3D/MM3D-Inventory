@@ -51,7 +51,7 @@ app.whenReady().then(async () => {
   ipcMain.handle("mm3d:save-file", async () => false);
   ipcMain.handle("mm3d:open-file", async () => null);
   const smokeUpdate = {
-    version: "1.0.2",
+    version: "1.0.3",
     packaged: true,
     portable: false,
     state: "unavailable",

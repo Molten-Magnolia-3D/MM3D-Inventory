@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { fileInDist } from "./paths";
+import { fileInDist } from "./paths.js";
 
 describe("renderer protocol paths", () => {
   const dist = path.resolve("/tmp/mm3d-fake-dist");
