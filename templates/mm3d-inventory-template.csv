@@ -1,0 +1,16 @@
+section,sku,name,type,area,parent_path,path,barcode,qty,cost_usd,sell_price_usd,notes,kit_sku,component_sku,nested_kit_sku,filament_grams,filament_material,brand,material,color_name,color_hex,starting_grams,remaining_grams,location_path,location_barcode,cost_per_kg_usd
+locations,,Workshop,building,hardware,,Workshop,LOC-WS,,,,,,,,,,,,,,,,,,
+locations,,Hardware room,room,hardware,Workshop,Workshop / Hardware room,LOC-HW,,,,,,,,,,,,,,,,,,
+locations,,Bin A1,bin,hardware,Workshop / Hardware room,Workshop / Hardware room / Bin A1,BIN-A1,,,,,,,,,,,,,,,,,,
+locations,,Filament wall,area,filament,Workshop,Workshop / Filament wall,LOC-FIL,,,,,,,,,,,,,,,,,,
+items,PEN-BODY,Pen body,part,,,,,,2.4,18,Shared across Harrier kits,,,,,,,,,,,,,,
+items,WING-SET,Wing set,part,,,,,,1.1,,,,,,,,,,,,,,,,
+items,DEC-231,231 squadron decals,part,,,,,,0.9,,Livery-specific,,,,,,,,,,,,,,
+stock,PEN-BODY,,,,,,,12,,,,,,,,,,,,,,,Workshop / Hardware room / Bin A1,BIN-A1,
+stock,WING-SET,,,,,,,8,,,,,,,,,,,,,,,Workshop / Hardware room / Bin A1,BIN-A1,
+stock,DEC-231,,,,,,,5,,,,,,,,,,,,,,,Workshop / Hardware room / Bin A1,BIN-A1,
+kits,KIT-HARRIER-231,Harrier 231 kit,,,,,,,,42,,,,,,,,,,,,,,,
+bom,,,,,,,,1,,,,KIT-HARRIER-231,PEN-BODY,,,,,,,,,,,,
+bom,,,,,,,,1,,,,KIT-HARRIER-231,WING-SET,,,,,,,,,,,,
+bom,,,,,,,,1,,,,KIT-HARRIER-231,DEC-231,,12,PLA,,,,,,,,,
+spools,PLA-BLK,Black PLA spool,,,,,SP-PLA-BLK-01,,,,,,,,,,Bambu,PLA,Black,#111111,1000,640,Workshop / Filament wall,LOC-FIL,22.99
