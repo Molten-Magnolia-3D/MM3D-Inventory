@@ -25,6 +25,7 @@ import LabelsPage from "./pages/Labels";
 import ImportExportPage from "./pages/ImportExport";
 import SettingsPage from "./pages/Settings";
 import type { LookupHit } from "./core/types";
+import { useUpdateStatus } from "./useUpdateStatus";
 
 const links = [
   { to: "/", label: "Shop floor", icon: LayoutDashboard, end: true },
@@ -85,12 +86,14 @@ export default function App() {
           {online ? "Online" : "Offline — still fully usable"}
           {lock?.holder ? ` · lock on ${lock.hostname}` : ""}
           {inv?.readOnly ? " · read-only" : ""}
+          <UpdateFoot />
         </div>
       </aside>
       <div className="main">
         <ScanBar />
         <div className="content">
           {inv?.readOnly && inv.readOnlyReason && <div className="danger-banner">{inv.readOnlyReason}</div>}
+          <UpdateBanner />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/scan" element={<ScanPage />} />
@@ -109,6 +112,31 @@ export default function App() {
           </Routes>
         </div>
       </div>
+    </div>
+  );
+}
+
+function UpdateFoot() {
+  const status = useUpdateStatus();
+  if (!status) return null;
+  if (status.state === "downloading") return <div>Downloading {status.percent ?? 0}%</div>;
+  if (status.state === "ready") return <div>v{status.versionAvailable} ready</div>;
+  return <div>v{status.version}</div>;
+}
+
+function UpdateBanner() {
+  const { platform } = useInventory();
+  const status = useUpdateStatus();
+  if (status?.state === "downloading") {
+    return <div className="warn-banner">{status.message}</div>;
+  }
+  if (status?.state !== "ready") return null;
+  return (
+    <div className="warn-banner row" style={{ alignItems: "center", gap: 12 }}>
+      <span>{status.message}</span>
+      <button type="button" className="btn" onClick={() => void platform.installUpdate()}>
+        Restart to update
+      </button>
     </div>
   );
 }

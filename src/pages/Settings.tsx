@@ -2,11 +2,14 @@ import { FormEvent, useState } from "react";
 import { loadSampleWorkshop } from "../core/seed";
 import { useInventory } from "../state";
 import { Field } from "../ui";
+import { useUpdateStatus } from "../useUpdateStatus";
 
 export default function SettingsPage() {
   const { inv, refresh, sync, lock, online, platform, user } = useInventory();
+  const update = useUpdateStatus();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
   if (!inv) return null;
   const api = inv;
   const settings = api.getSettings();
@@ -51,6 +54,7 @@ export default function SettingsPage() {
           <p>
             Signed in as {user?.email}. {platform.isElectron ? "Windows desktop" : "Browser"} ·{" "}
             {online ? "online" : "offline"}
+            {update?.version ? ` · v${update.version}` : ""}
           </p>
         </div>
       </div>
@@ -61,6 +65,38 @@ export default function SettingsPage() {
           Another PC holds the lock ({lock.hostname}). This copy is read-only until you take over.
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>App updates</h2>
+        <p className="empty" style={{ paddingTop: 0 }}>
+          The installed Setup app checks GitHub Releases after launch and downloads newer builds in the background.
+          Portable EXEs do not auto-update — install with Setup if you want that.
+        </p>
+        {update && <p>{update.message || `This copy is v${update.version}.`}</p>}
+        {update?.state === "downloading" && (
+          <div className="update-meter" aria-valuenow={update.percent ?? 0}>
+            <span style={{ width: `${update.percent ?? 0}%` }} />
+          </div>
+        )}
+        <div className="row">
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={checking || update?.state === "checking" || update?.state === "downloading"}
+            onClick={() => {
+              setChecking(true);
+              void platform.checkForUpdates().finally(() => setChecking(false));
+            }}
+          >
+            {checking || update?.state === "checking" ? "Checking…" : "Check for updates"}
+          </button>
+          {update?.state === "ready" && (
+            <button className="btn" type="button" onClick={() => void platform.installUpdate()}>
+              Restart to update
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Filament low stock</h2>

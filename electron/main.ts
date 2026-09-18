@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { fileInDist } from "./paths";
+import { setupUpdater } from "./updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = !app.isPackaged;
@@ -152,6 +153,8 @@ app.whenReady().then(() => {
     const data = fs.readFileSync(filePath);
     return { name: path.basename(filePath), data };
   });
+
+  setupUpdater();
 
   createWindow();
   app.on("activate", () => {

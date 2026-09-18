@@ -24,6 +24,11 @@ jobs:
           npm ci
           npm test
 
+      - name: Read app version
+        id: ver
+        shell: bash
+        run: node -p "'version=' + require('./package.json').version" >> "$GITHUB_OUTPUT"
+
       - name: Build Windows installer and portable app
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -36,25 +41,37 @@ jobs:
           path: |
             release/MM3D-Inventory-Setup-*.exe
             release/MM3D-Inventory-Portable-*.exe
+            release/latest.yml
+            release/*.blockmap
           if-no-files-found: error
+
+      - name: Confirm update metadata
+        shell: bash
+        run: |
+          ls -la release
+          test -f release/latest.yml
+          ls -la release/latest.yml release/MM3D-Inventory-Setup-*.exe
 
       - name: Publish GitHub Release
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
-          name: MM3D Inventory 1.0.1
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: MM3D Inventory ${{ steps.ver.outputs.version }}
           draft: false
           make_latest: true
           fail_on_unmatched_files: true
           files: |
             release/MM3D-Inventory-Setup-*.exe
             release/MM3D-Inventory-Portable-*.exe
+            release/latest.yml
           body: |
             Windows builds of **MM3D Inventory**.
 
-            - **MM3D-Inventory-Setup-1.0.1.exe** — installer (recommended)
-            - **MM3D-Inventory-Portable-1.0.1.exe** — run without installing
+            - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
+            - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
+
+            Installed copies check GitHub Releases after launch and download newer builds in the background. Restart when the app says an update is ready (or just quit — it installs on close).
 
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 

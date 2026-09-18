@@ -1,7 +1,7 @@
 {
   "name": "mm3d-inventory",
   "productName": "MM3D Inventory",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Windows desktop inventory for Molten Magnolia 3D — parts, kits, locations, and filament.",
   "author": "Molten Magnolia 3D",
@@ -11,8 +11,8 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && electron .\"",
-    "build": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder",
-    "build:win": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder --win --x64",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder --publish never",
+    "build:win": "tsc -p tsconfig.json --noEmit && vite build && npm run build:electron && electron-builder --win --x64 --publish never",
     "build:web": "tsc -p tsconfig.json --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
@@ -22,6 +22,7 @@
     "postinstall": "node scripts/copy-wasm.js"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "firebase": "^11.6.0",
     "jsbarcode": "^3.12.1",
     "jspdf": "^3.0.1",
@@ -68,7 +69,11 @@
         "to": "templates"
       }
     ],
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "Molten-Magnolia-3D",
+      "repo": "MM3D-Inventory"
+    },
     "win": {
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,

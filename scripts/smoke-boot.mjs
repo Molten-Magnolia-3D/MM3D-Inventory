@@ -50,6 +50,16 @@ app.whenReady().then(async () => {
   }));
   ipcMain.handle("mm3d:save-file", async () => false);
   ipcMain.handle("mm3d:open-file", async () => null);
+  const smokeUpdate = {
+    version: "1.0.2",
+    packaged: true,
+    portable: false,
+    state: "unavailable",
+    message: "smoke",
+  };
+  ipcMain.handle("mm3d:update-status", async () => smokeUpdate);
+  ipcMain.handle("mm3d:update-check", async () => smokeUpdate);
+  ipcMain.handle("mm3d:update-install", async () => false);
 
   const win = new BrowserWindow({
     show: false,

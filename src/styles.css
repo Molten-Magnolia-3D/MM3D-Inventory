@@ -263,6 +263,18 @@ tr.clickable:hover { background: rgba(213, 106, 44, 0.08); }
   border-radius: 12px;
   margin-bottom: 12px;
 }
+.update-meter {
+  height: 8px;
+  background: var(--bg-2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 10px 0 14px;
+}
+.update-meter span {
+  display: block;
+  height: 100%;
+  background: var(--copper);
+}
 .danger-banner {
   background: rgba(210, 101, 74, 0.12);
   border: 1px solid rgba(210, 101, 74, 0.35);

@@ -1,5 +1,6 @@
 import type { DeviceInfo } from "./core/types";
 import { asUint8Array, sqlAssetUrl } from "./core/util";
+import { unavailableUpdate, type UpdateStatus } from "./core/update";
 
 export interface Platform {
   isElectron: boolean;
@@ -10,6 +11,10 @@ export interface Platform {
   saveFile(filename: string, data: Uint8Array | string, mime?: string): Promise<boolean>;
   openFile(): Promise<{ name: string; data: Uint8Array } | null>;
   locateWasm(file: string): string;
+  getUpdateStatus(): Promise<UpdateStatus>;
+  checkForUpdates(): Promise<UpdateStatus>;
+  installUpdate(): Promise<boolean>;
+  onUpdate(cb: (status: UpdateStatus) => void): () => void;
 }
 
 type ElectronApi = {
@@ -20,6 +25,10 @@ type ElectronApi = {
   deviceInfo: () => Promise<DeviceInfo>;
   saveFile: (filename: string, data: Uint8Array | string, mime?: string) => Promise<boolean>;
   openFile: () => Promise<{ name: string; data: Uint8Array } | null>;
+  getUpdateStatus: () => Promise<UpdateStatus>;
+  checkForUpdates: () => Promise<UpdateStatus>;
+  installUpdate: () => Promise<boolean>;
+  onUpdate: (cb: (status: UpdateStatus) => void) => () => void;
 };
 
 declare global {
@@ -105,6 +114,10 @@ export function createPlatform(): Platform {
       saveFile: (filename, data, mime) => api.saveFile(filename, data, mime),
       openFile: () => api.openFile(),
       locateWasm: (file) => sqlAssetUrl(file),
+      getUpdateStatus: () => api.getUpdateStatus(),
+      checkForUpdates: () => api.checkForUpdates(),
+      installUpdate: () => api.installUpdate(),
+      onUpdate: (cb) => api.onUpdate(cb),
     };
   }
 
@@ -145,5 +158,17 @@ export function createPlatform(): Platform {
       });
     },
     locateWasm: (file) => sqlAssetUrl(file),
+    async getUpdateStatus() {
+      return unavailableUpdate("web", "Updates apply to the installed Windows Setup app.");
+    },
+    async checkForUpdates() {
+      return unavailableUpdate("web", "Updates apply to the installed Windows Setup app.");
+    },
+    async installUpdate() {
+      return false;
+    },
+    onUpdate() {
+      return () => undefined;
+    },
   };
 }

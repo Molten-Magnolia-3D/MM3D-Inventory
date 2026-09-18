@@ -6,8 +6,8 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)**:
 
-- **MM3D-Inventory-Setup-1.0.1.exe** — installer (recommended)
-- **MM3D-Inventory-Portable-1.0.1.exe** — no install; double-click to run
+- **MM3D-Inventory-Setup-1.0.2.exe** — installer (recommended; auto-updates from GitHub Releases)
+- **MM3D-Inventory-Portable-1.0.2.exe** — no install; double-click to run (does not auto-update)
 
 If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build Windows app** run, and download the `MM3D-Inventory-Windows` artifact.
 
@@ -60,6 +60,8 @@ npm run build
 ```
 
 `electron-builder` writes NSIS and portable builds under `release/`. CI also builds these on every push so you can download them from GitHub Releases.
+
+Installed Setup copies check for a newer GitHub Release after launch, download it in the background, and install when you restart (or when you quit). Settings → **Check for updates** does the same on demand. Portable EXEs skip this — use Setup on the shop PC.
 
 ## First-time shop setup
 
