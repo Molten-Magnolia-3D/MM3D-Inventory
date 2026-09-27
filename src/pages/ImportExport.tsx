@@ -24,12 +24,14 @@ export default function ImportExportPage() {
     try {
       const text = new TextDecoder().decode(file.data);
       const imported = importCsv(api, text);
+      const total = Object.values(imported.created).reduce((sum, n) => sum + n, 0);
       setResult(
         `Imported ${Object.entries(imported.created)
           .map(([k, n]) => `${n} ${k}`)
           .join(", ")}.${imported.errors.length ? ` ${imported.errors.length} row errors.` : ""}`,
       );
       if (imported.errors.length) setError(imported.errors.join("\n"));
+      else if (!total) setError("Nothing imported from that file.");
       refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -42,7 +44,8 @@ export default function ImportExportPage() {
         <div>
           <h1>CSV import / export</h1>
           <p>
-            Download the template and fit your spreadsheet to those columns. Sections: locations, items, stock, kits, bom, spools.
+            Import the MM3D template, or a Squarespace product export (Products → Export all). Orders CSVs are skipped on
+            purpose — we need the product file with Title, SKU, Price, and Stock.
           </p>
         </div>
       </div>
@@ -63,7 +66,11 @@ export default function ImportExportPage() {
         <h2>Column notes</h2>
         <ul>
           <li>
-            <code>section</code> tells the importer which table the row belongs to.
+            <code>section</code> tells the MM3D template which table the row belongs to.
+          </li>
+          <li>
+            A Squarespace product CSV (Title, SKU, Price, Stock) is mapped automatically. Variants become their own SKUs.
+            Stock lands in <code>Imported / Squarespace</code>.
           </li>
           <li>
             Location <code>path</code> uses slashes: <code>Workshop / Hardware room / Bin A1</code>.

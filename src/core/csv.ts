@@ -153,6 +153,151 @@ export const TEMPLATE_ROWS: Row[] = [
 
 export const TEMPLATE_CSV = Papa.unparse(TEMPLATE_ROWS, { columns: TEMPLATE_HEADER });
 
+function keyOf(header: string): string {
+  return header
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+const HEADER_ALIASES: Record<string, string> = {
+  title: "name",
+  product_name: "name",
+  item_name: "name",
+  product_title: "name",
+  sku: "sku",
+  variant_sku: "sku",
+  product_sku: "sku",
+  price: "sell_price_usd",
+  sale_price: "sale_price",
+  stock: "qty",
+  quantity: "qty",
+  qty: "qty",
+  inventory: "qty",
+  description: "notes",
+  product_type: "product_type",
+  categories: "categories",
+  tags: "tags",
+  on_sale: "on_sale",
+  option_name_1: "option_name_1",
+  option_value_1: "option_value_1",
+  option_name_2: "option_name_2",
+  option_value_2: "option_value_2",
+  option_name_3: "option_name_3",
+  option_value_3: "option_value_3",
+  order_id: "order_id",
+  order_number: "order_number",
+  section: "section",
+};
+
+function canonicalHeader(header: string): string {
+  const key = keyOf(header);
+  return HEADER_ALIASES[key] ?? key;
+}
+
+export function parseCsvTable(csvText: string): { headers: string[]; rows: Row[] } {
+  const text = csvText.replace(/^\uFEFF/, "").replace(/^sep=.*\r?\n/i, "");
+  const parsed = Papa.parse<Row>(text, {
+    header: true,
+    skipEmptyLines: "greedy",
+    transformHeader: canonicalHeader,
+  });
+  const headers = (parsed.meta.fields ?? []).map(canonicalHeader);
+  const rows = parsed.data
+    .map((raw) => {
+      const out: Row = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (!k || k.startsWith("_")) continue;
+        out[canonicalHeader(k)] = String(v ?? "").trim();
+      }
+      return out;
+    })
+    .filter((entry) => Object.values(entry).some((v) => String(v ?? "").trim()));
+  return { headers, rows };
+}
+
+function looksLikeOrders(headers: string[]): boolean {
+  return headers.includes("order_id") || headers.includes("order_number");
+}
+
+function looksLikeSquarespace(headers: string[]): boolean {
+  if (headers.includes("section")) return false;
+  if (looksLikeOrders(headers)) return false;
+  return (
+    headers.includes("name") &&
+    (headers.includes("sku") || headers.includes("sell_price_usd") || headers.includes("qty") || headers.includes("product_type"))
+  );
+}
+
+function squarespaceItemName(data: Row): string {
+  const bits = [cell(data, "name")];
+  for (const i of [1, 2, 3]) {
+    const value = cell(data, `option_value_${i}`);
+    if (value) bits.push(value);
+  }
+  return bits.filter(Boolean).join(" / ");
+}
+
+function squarespaceToMm3d(rows: Row[]): Row[] {
+  const out: Row[] = [
+    row({
+      section: "locations",
+      name: "Imported",
+      type: "area",
+      area: "hardware",
+      path: "Imported",
+    }),
+    row({
+      section: "locations",
+      name: "Squarespace",
+      type: "bin",
+      area: "hardware",
+      parent_path: "Imported",
+      path: "Imported / Squarespace",
+      barcode: "BIN-IMPORT",
+    }),
+  ];
+  for (const data of rows) {
+    const name = squarespaceItemName(data);
+    const sku = slugSku(cell(data, "sku") || name);
+    if (!sku) continue;
+    let sell = num(data, "sell_price_usd");
+    if (/^yes$/i.test(cell(data, "on_sale")) && num(data, "sale_price")) sell = num(data, "sale_price");
+    const notes = [cell(data, "notes"), cell(data, "categories"), cell(data, "tags")]
+      .filter(Boolean)
+      .join(" · ");
+    out.push(
+      row({
+        section: "items",
+        sku,
+        name: name || sku,
+        type: "product",
+        barcode: sku,
+        sell_price_usd: sell,
+        notes,
+      }),
+    );
+    const qtyRaw = cell(data, "qty");
+    if (qtyRaw && !/^unlimited$/i.test(qtyRaw)) {
+      const qty = Number(qtyRaw.replace(/,/g, ""));
+      if (Number.isFinite(qty) && qty !== 0) {
+        out.push(
+          row({
+            section: "stock",
+            sku,
+            qty,
+            location_path: "Imported / Squarespace",
+            location_barcode: "BIN-IMPORT",
+          }),
+        );
+      }
+    }
+  }
+  return out;
+}
+
 function cell(row: Row, key: string): string {
   return (row[key] ?? "").trim();
 }
@@ -312,10 +457,7 @@ export interface ImportResult {
 
 export function importCsv(inv: Inventory, csvText: string): ImportResult {
   inv.assertWritable();
-  const parsed = Papa.parse<Row>(csvText, {
-    header: true,
-    skipEmptyLines: true,
-  });
+  const parsed = parseCsvTable(csvText);
   const created = {
     locations: 0,
     items: 0,
@@ -325,7 +467,24 @@ export function importCsv(inv: Inventory, csvText: string): ImportResult {
     spools: 0,
   };
   const errors: string[] = [];
-  const rows = parsed.data.filter((row) => Object.values(row).some((v) => String(v ?? "").trim()));
+  if (looksLikeOrders(parsed.headers)) {
+    return {
+      created,
+      errors: [
+        "This looks like a Squarespace orders export. Export products from Products → Export all, then import that file.",
+      ],
+    };
+  }
+  let rows = parsed.rows;
+  if (looksLikeSquarespace(parsed.headers)) rows = squarespaceToMm3d(rows);
+  if (!rows.length) {
+    return {
+      created,
+      errors: [
+        `No data rows found. Columns: ${parsed.headers.join(", ") || "(none)"}. Use the MM3D template or a Squarespace product export (Title, SKU, Price, Stock).`,
+      ],
+    };
+  }
 
   const bySection = (section: string) =>
     rows.filter((r) => (cell(r, "section") || "items") === section);
@@ -472,6 +631,13 @@ export function importCsv(inv: Inventory, csvText: string): ImportResult {
     } catch (err) {
       errors.push(`Spool ${cell(row, "barcode")}: ${(err as Error).message}`);
     }
+  }
+
+  const total = Object.values(created).reduce((sum, n) => sum + n, 0);
+  if (!total && !errors.length) {
+    errors.push(
+      `Nothing imported. Need the MM3D template (section, sku, …) or a Squarespace product export (Title, SKU, Price, Stock). Columns found: ${parsed.headers.join(", ") || "(none)"}`,
+    );
   }
 
   return { created, errors };

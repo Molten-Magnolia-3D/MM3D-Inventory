@@ -31,9 +31,28 @@ body {
   color: var(--ink);
 }
 
-button, input, select, textarea { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; }
 a { color: var(--copper-hot); text-decoration: none; }
 a:hover { text-decoration: underline; }
+input, select, textarea {
+  color: #1a100c;
+  background-color: #f4ebe0;
+  color-scheme: light;
+  -webkit-text-fill-color: #1a100c;
+}
+option, optgroup {
+  color: #1a100c;
+  background-color: #ffffff;
+  -webkit-text-fill-color: #1a100c;
+}
+::selection {
+  background: var(--copper);
+  color: #1a100c;
+}
+input::placeholder, textarea::placeholder {
+  color: #6b574c;
+  opacity: 1;
+}
 
 h1, h2, h3, .brand-type {
   font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
@@ -120,7 +139,8 @@ nav a.active, nav a:hover {
 }
 .scan-bar input {
   flex: 1;
-  background: var(--panel);
+  background: #f4ebe0;
+  color: #1a100c;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px 14px 12px 42px;
@@ -196,7 +216,10 @@ tr.clickable:hover { background: rgba(213, 106, 44, 0.08); }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
 .field input, .field select, .field textarea {
-  background: var(--bg-2);
+  background: #f4ebe0;
+  color: #1a100c;
+  -webkit-text-fill-color: #1a100c;
+  color-scheme: light;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;

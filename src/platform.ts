@@ -112,7 +112,13 @@ export function createPlatform(): Platform {
       },
       deviceInfo: () => api.deviceInfo(),
       saveFile: (filename, data, mime) => api.saveFile(filename, data, mime),
-      openFile: () => api.openFile(),
+      async openFile() {
+        const file = await api.openFile();
+        if (!file) return null;
+        const data = asUint8Array((file as { data: unknown }).data);
+        if (!data) return null;
+        return { name: file.name, data };
+      },
       locateWasm: (file) => sqlAssetUrl(file),
       getUpdateStatus: () => api.getUpdateStatus(),
       checkForUpdates: () => api.checkForUpdates(),
