@@ -148,4 +148,17 @@ describe("inventory v1", () => {
     expect(takeover.lock.deviceId).toBe("pc-b");
     expect(inv.readOnly).toBe(false);
   });
+
+  it("deletes selected items and their stock", async () => {
+    const inv = await freshInventory();
+    loadSampleWorkshop(inv);
+    const body = inv.getItemBySku("PEN-BODY")!;
+    const wings = inv.getItemBySku("WING-SET")!;
+    const result = inv.deleteItems([body.id, wings.id]);
+    expect(result.deleted).toBe(2);
+    expect(inv.getItemBySku("PEN-BODY")).toBeUndefined();
+    expect(inv.getItemBySku("WING-SET")).toBeUndefined();
+    expect(inv.getItemBySku("DEC-231")).toBeTruthy();
+    expect(inv.kitBom(inv.listKits().find((k) => k.sku === "KIT-HARRIER-231")!.id).some((line) => line.componentItemId === body.id)).toBe(false);
+  });
 });

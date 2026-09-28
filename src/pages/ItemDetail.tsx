@@ -121,6 +121,22 @@ export default function ItemDetailPage() {
           <button className="btn danger" onClick={() => setMove("scrap")}>
             Scrap
           </button>
+          <button
+            className="btn danger"
+            onClick={() => {
+              if (!inv || !id) return;
+              if (!window.confirm(`Delete ${item.sku}? Stock for this SKU is removed.`)) return;
+              try {
+                inv.deleteItems([id]);
+                nav("/items");
+                refresh();
+              } catch (err) {
+                setError((err as Error).message);
+              }
+            }}
+          >
+            Delete
+          </button>
         </div>
       </div>
       {warn && <div className="warn-banner">{warn}</div>}

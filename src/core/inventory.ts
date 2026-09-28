@@ -773,6 +773,25 @@ export class Inventory {
     return next;
   }
 
+  deleteItems(ids: string[]): { deleted: number } {
+    this.assertWritable();
+    const unique = [...new Set(ids.filter(Boolean))];
+    return this.db.transaction(() => {
+      let deleted = 0;
+      for (const id of unique) {
+        if (!this.getItem(id)) continue;
+        this.db.run("DELETE FROM stock WHERE item_id = ?", [id]);
+        this.db.run("DELETE FROM kit_bom WHERE component_item_id = ?", [id]);
+        this.db.run("UPDATE movements SET item_id = NULL WHERE item_id = ?", [id]);
+        this.db.run("UPDATE spools SET item_id = NULL WHERE item_id = ?", [id]);
+        this.db.run("DELETE FROM items WHERE id = ?", [id]);
+        deleted += 1;
+      }
+      if (deleted) this.markDirty();
+      return { deleted };
+    });
+  }
+
   private bumpStock(
     itemId: string,
     locationId: string,

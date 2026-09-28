@@ -136,9 +136,12 @@ nav a.active, nav a:hover {
   top: 0;
   z-index: 5;
   backdrop-filter: blur(10px);
+  width: 100%;
 }
 .scan-bar input {
-  flex: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
   background: #f4ebe0;
   color: #1a100c;
   border: 1px solid var(--line);
@@ -146,7 +149,12 @@ nav a.active, nav a:hover {
   padding: 12px 14px 12px 42px;
   outline: none;
 }
-.scan-bar .scan-wrap { position: relative; flex: 1; }
+.scan-bar .scan-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
 .scan-bar .scan-wrap svg {
   position: absolute;
   left: 14px;
@@ -186,6 +194,10 @@ nav a.active, nav a:hover {
 .panel { padding: 18px; }
 
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row > input {
+  flex: 1 1 240px;
+  min-width: 0;
+}
 .spread { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 
 table { width: 100%; border-collapse: collapse; }
@@ -212,6 +224,22 @@ tr.clickable:hover { background: rgba(213, 106, 44, 0.08); }
 .btn.ghost { background: transparent; color: var(--cream); }
 .btn.danger { background: var(--danger); color: white; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--copper);
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.toolbar .count { color: var(--muted); }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }

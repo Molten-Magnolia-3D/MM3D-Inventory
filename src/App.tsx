@@ -192,7 +192,8 @@ function ScanBar() {
             setCode(e.target.value);
             setMiss(null);
           }}
-          placeholder="Scan or type a barcode, then Enter — bins, SKUs, kits, spools"
+          placeholder="Scan or type a barcode, then Enter"
+          title="Scan or type a barcode, then press Enter. Works for bins, SKUs, kits, and spools."
           autoComplete="off"
         />
       </div>
