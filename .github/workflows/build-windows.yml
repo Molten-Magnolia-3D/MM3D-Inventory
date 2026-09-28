@@ -24,10 +24,10 @@ jobs:
           npm ci
           npm test
 
-      - name: Read app version
+      - name: Stamp unique release version
         id: ver
         shell: bash
-        run: node -p "'version=' + require('./package.json').version" >> "$GITHUB_OUTPUT"
+        run: node scripts/stamp-release-version.mjs >> "$GITHUB_OUTPUT"
 
       - name: Build Windows installer and portable app
         env:
@@ -66,12 +66,12 @@ jobs:
             release/MM3D-Inventory-Portable-*.exe
             release/latest.yml
           body: |
-            Windows builds of **MM3D Inventory**.
+            Windows builds of **MM3D Inventory** (every push publishes a new version).
 
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
             - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
 
-            Installed copies check GitHub Releases after launch and download newer builds in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
 
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 

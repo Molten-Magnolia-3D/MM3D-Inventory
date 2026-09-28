@@ -33,6 +33,7 @@ let status: UpdateStatus = {
   message: "",
 };
 let userInitiated = false;
+let inFlight = false;
 
 function broadcast() {
   const payload = { ...status };
@@ -49,10 +50,14 @@ function setStatus(patch: Partial<UpdateStatus>) {
 async function checkNow(fromUser = false) {
   userInitiated = fromUser;
   if (!app.isPackaged || isPortableEnv()) return status;
+  if (inFlight && !fromUser) return status;
+  inFlight = true;
   try {
     await autoUpdater.checkForUpdates();
   } catch (err) {
     applyError(err);
+  } finally {
+    inFlight = false;
   }
   return status;
 }
@@ -113,6 +118,7 @@ export function setupUpdater(): void {
   }
 
   autoUpdater.on("checking-for-update", () => {
+    if (!userInitiated) return;
     setStatus({
       state: "checking",
       message: "Checking GitHub for a newer shop build…",
@@ -152,7 +158,12 @@ export function setupUpdater(): void {
   });
   autoUpdater.on("error", (err) => applyError(err));
 
+  const CHECK_MS = 15 * 60 * 1000;
   setTimeout(() => {
     void checkNow(false);
   }, 6_000);
+  setInterval(() => {
+    if (status.state === "checking" || status.state === "downloading" || status.state === "ready") return;
+    void checkNow(false);
+  }, CHECK_MS);
 }

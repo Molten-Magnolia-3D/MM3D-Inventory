@@ -6,8 +6,8 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)**:
 
-- **MM3D-Inventory-Setup-1.0.5.exe** — installer (recommended; auto-updates from GitHub Releases)
-- **MM3D-Inventory-Portable-1.0.5.exe** — no install; double-click to run (does not auto-update)
+- **MM3D-Inventory-Setup-*.exe** — installer (recommended; auto-updates from GitHub Releases on every push)
+- **MM3D-Inventory-Portable-*.exe** — no install; double-click to run (does not auto-update)
 
 If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build Windows app** run, and download the `MM3D-Inventory-Windows` artifact.
 
@@ -59,9 +59,9 @@ npm run dev:electron
 npm run build
 ```
 
-`electron-builder` writes NSIS and portable builds under `release/`. CI also builds these on every push so you can download them from GitHub Releases.
+`electron-builder` writes NSIS and portable builds under `release/`. CI stamps a new version and publishes a GitHub Release on **every push**, so an installed Setup copy can auto-update.
 
-Installed Setup copies check for a newer GitHub Release after launch, download it in the background, and install when you restart (or when you quit). Settings → **Check for updates** does the same on demand. Portable EXEs skip this — use Setup on the shop PC.
+Installed Setup copies check for a newer GitHub Release after launch and every 15 minutes, download it in the background, and install when you restart (or when you quit). Settings → **Check for updates** does the same on demand. Portable EXEs skip this — use Setup on the shop PC.
 
 ## First-time shop setup
 

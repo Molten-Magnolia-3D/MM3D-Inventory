@@ -69,8 +69,9 @@ export default function SettingsPage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>App updates</h2>
         <p className="empty" style={{ paddingTop: 0 }}>
-          The installed Setup app checks GitHub Releases after launch and downloads newer builds in the background.
-          Portable EXEs do not auto-update — install with Setup if you want that.
+          The installed Setup app checks GitHub after launch and every 15 minutes. Each push to the repo publishes a
+          newer version, which downloads in the background. Portable EXEs do not auto-update — install with Setup if you
+          want that.
         </p>
         {update && <p>{update.message || `This copy is v${update.version}.`}</p>}
         {update?.state === "downloading" && (
