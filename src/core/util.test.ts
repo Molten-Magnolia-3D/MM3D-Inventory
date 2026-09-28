@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asUint8Array, sqlAssetUrl, withTimeout } from "./util";
+import { asUint8Array, itemLabel, sqlAssetUrl, withTimeout } from "./util";
 
 describe("boot helpers", () => {
   it("coerces IPC Buffer clones into Uint8Array", () => {
@@ -27,5 +27,12 @@ describe("boot helpers", () => {
 
   it("times out a hanging promise", async () => {
     await expect(withTimeout(new Promise(() => undefined), 20, "gave up")).rejects.toThrow(/gave up/);
+  });
+
+  it("joins name and variant for labels", () => {
+    expect(itemLabel({ name: "Memorabilia mug" })).toBe("Memorabilia mug");
+    expect(itemLabel({ name: "Memorabilia mug", variant: "VMA-231 · 11 oz" })).toBe(
+      "Memorabilia mug · VMA-231 · 11 oz",
+    );
   });
 });

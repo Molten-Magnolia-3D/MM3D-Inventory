@@ -23,13 +23,23 @@ describe("inventory v1", () => {
     const room = inv.createLocation({ name: "Room", type: "room", area: "hardware" });
     const a = inv.createLocation({ name: "A1", type: "bin", area: "hardware", parentId: room.id, barcode: "BIN-A1" });
     const b = inv.createLocation({ name: "B2", type: "bin", area: "hardware", parentId: room.id, barcode: "BIN-B2" });
-    const pen = inv.createItem({ sku: "pen-body", name: "Pen body", type: "part", barcode: "PEN-BODY", costUsd: 2.4, sellPriceUsd: 18 });
+    const pen = inv.createItem({
+      sku: "pen-body",
+      name: "Pen body",
+      variant: "Black",
+      type: "part",
+      barcode: "PEN-BODY",
+      costUsd: 2.4,
+      sellPriceUsd: 18,
+    });
     inv.receive({ itemId: pen.id, locationId: a.id, qty: 10 });
     inv.receive({ itemId: pen.id, locationId: b.id, qty: 2 });
     const view = inv.itemWithStock(pen.id)!;
     expect(view.totalQty).toBe(12);
     expect(view.lots).toHaveLength(2);
     expect(view.marginUsd).toBe(15.6);
+    expect(view.variant).toBe("Black");
+    expect(inv.listItems({ query: "Black" })[0]?.sku).toBe("PEN-BODY");
     const bin = inv.lookup("BIN-A1");
     expect(bin.kind).toBe("bin");
     if (bin.kind === "bin") {

@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInventory } from "../state";
 import { Field, Modal, Money } from "../ui";
-import type { MovementType } from "../core/types";
+import type { ItemType, MovementType } from "../core/types";
 
 export default function ItemDetailPage() {
   const { id } = useParams();
@@ -15,6 +15,16 @@ export default function ItemDetailPage() {
   const [note, setNote] = useState("");
   const [warn, setWarn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [edit, setEdit] = useState({
+    name: "",
+    variant: "",
+    type: "part" as ItemType,
+    barcode: "",
+    costUsd: "",
+    sellPriceUsd: "",
+    notes: "",
+  });
   if (!inv || !id) return null;
   const item = inv.itemWithStock(id);
   if (!item) return <p className="empty">Item not found.</p>;
@@ -43,6 +53,42 @@ export default function ItemDetailPage() {
     }
   }
 
+  function openEdit() {
+    if (!item) return;
+    setError(null);
+    setEdit({
+      name: item.name,
+      variant: item.variant ?? "",
+      type: item.type,
+      barcode: item.barcode ?? "",
+      costUsd: String(item.costUsd),
+      sellPriceUsd: String(item.sellPriceUsd),
+      notes: item.notes ?? "",
+    });
+    setEditing(true);
+  }
+
+  function saveEdit(e: FormEvent) {
+    e.preventDefault();
+    if (!inv || !id) return;
+    setError(null);
+    try {
+      inv.updateItem(id, {
+        name: edit.name,
+        variant: edit.variant,
+        type: edit.type,
+        barcode: edit.barcode || null,
+        costUsd: Number(edit.costUsd) || 0,
+        sellPriceUsd: Number(edit.sellPriceUsd) || 0,
+        notes: edit.notes || null,
+      });
+      setEditing(false);
+      refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   return (
     <div>
       <div className="page-head">
@@ -52,10 +98,14 @@ export default function ItemDetailPage() {
           </p>
           <h1>{item.name}</h1>
           <p>
+            {item.variant ? `${item.variant} · ` : ""}
             {item.sku} · barcode {item.barcode ?? "none"} · {item.type}
           </p>
         </div>
         <div className="row">
+          <button className="btn secondary" onClick={openEdit}>
+            Edit
+          </button>
           <button className="btn" onClick={() => setMove("receive")}>
             Receive
           </button>
@@ -120,6 +170,51 @@ export default function ItemDetailPage() {
         </table>
         {item.lots.length === 0 && <p className="empty">Not in any bin yet.</p>}
       </div>
+      {editing && (
+        <Modal title="Edit item" onClose={() => setEditing(false)}>
+          {error && <div className="danger-banner">{error}</div>}
+          <form onSubmit={saveEdit}>
+            <div className="form-grid">
+              <Field label="Name">
+                <input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} required />
+              </Field>
+              <Field label="Variant">
+                <input
+                  value={edit.variant}
+                  onChange={(e) => setEdit({ ...edit, variant: e.target.value })}
+                  placeholder="Squadron, size, color…"
+                />
+              </Field>
+              <Field label="Type">
+                <select
+                  value={edit.type}
+                  onChange={(e) => setEdit({ ...edit, type: e.target.value as ItemType })}
+                >
+                  <option value="part">Part</option>
+                  <option value="product">Product</option>
+                  <option value="consumable">Consumable</option>
+                  <option value="filament">Filament</option>
+                </select>
+              </Field>
+              <Field label="Barcode">
+                <input value={edit.barcode} onChange={(e) => setEdit({ ...edit, barcode: e.target.value })} />
+              </Field>
+              <Field label="Cost (USD)">
+                <input value={edit.costUsd} onChange={(e) => setEdit({ ...edit, costUsd: e.target.value })} />
+              </Field>
+              <Field label="Selling price (USD)">
+                <input value={edit.sellPriceUsd} onChange={(e) => setEdit({ ...edit, sellPriceUsd: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Notes">
+              <textarea value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} />
+            </Field>
+            <button className="btn" type="submit">
+              Save
+            </button>
+          </form>
+        </Modal>
+      )}
       {move && (
         <Modal title={`${move} ${item.sku}`} onClose={() => setMove(null)}>
           {error && <div className="danger-banner">{error}</div>}

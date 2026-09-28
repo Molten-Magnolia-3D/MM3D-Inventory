@@ -22,6 +22,10 @@ export function slugSku(value: string): string {
   return value.trim().toUpperCase();
 }
 
+export function itemLabel(item: { name: string; variant?: string | null }): string {
+  return item.variant ? `${item.name} · ${item.variant}` : item.name;
+}
+
 export function formatUsd(n: number): string {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }

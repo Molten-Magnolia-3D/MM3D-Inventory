@@ -12,6 +12,7 @@ export default function ItemsPage() {
   const [draft, setDraft] = useState({
     sku: "",
     name: "",
+    variant: "",
     type: "part" as ItemType,
     barcode: "",
     costUsd: "0",
@@ -32,6 +33,7 @@ export default function ItemsPage() {
       api.createItem({
         sku: draft.sku,
         name: draft.name,
+        variant: draft.variant || null,
         type: draft.type,
         barcode: draft.barcode || null,
         costUsd: Number(draft.costUsd) || 0,
@@ -72,6 +74,7 @@ export default function ItemsPage() {
             <tr>
               <th>SKU</th>
               <th>Name</th>
+              <th>Variant</th>
               <th>Type</th>
               <th>On hand</th>
               <th>Cost</th>
@@ -100,6 +103,13 @@ export default function ItemsPage() {
               </Field>
               <Field label="Name">
                 <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} required />
+              </Field>
+              <Field label="Variant">
+                <input
+                  value={draft.variant}
+                  onChange={(e) => setDraft({ ...draft, variant: e.target.value })}
+                  placeholder="Squadron, size, color…"
+                />
               </Field>
               <Field label="Type">
                 <select
@@ -146,6 +156,7 @@ function ItemRow({ item }: { item: Item }) {
         <Link to={`/items/${item.id}`}>{item.sku}</Link>
       </td>
       <td>{item.name}</td>
+      <td>{item.variant || "—"}</td>
       <td>
         <span className="badge">{item.type}</span>
       </td>

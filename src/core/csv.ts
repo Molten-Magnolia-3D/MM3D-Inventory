@@ -18,6 +18,7 @@ export const TEMPLATE_HEADER = [
   "section",
   "sku",
   "name",
+  "variant",
   "type",
   "area",
   "parent_path",
@@ -170,14 +171,17 @@ const HEADER_ALIASES: Record<string, string> = {
   sku: "sku",
   variant_sku: "sku",
   product_sku: "sku",
+  variant: "variant",
+  variants: "variant",
   price: "sell_price_usd",
   sale_price: "sale_price",
   stock: "qty",
   quantity: "qty",
   qty: "qty",
   inventory: "qty",
-  description: "notes",
+  description: "description",
   product_type: "product_type",
+  product_type_non_editable: "product_type",
   categories: "categories",
   tags: "tags",
   on_sale: "on_sale",
@@ -187,6 +191,12 @@ const HEADER_ALIASES: Record<string, string> = {
   option_value_2: "option_value_2",
   option_name_3: "option_name_3",
   option_value_3: "option_value_3",
+  option_name_4: "option_name_4",
+  option_value_4: "option_value_4",
+  option_name_5: "option_name_5",
+  option_value_5: "option_value_5",
+  option_name_6: "option_name_6",
+  option_value_6: "option_value_6",
   order_id: "order_id",
   order_number: "order_number",
   section: "section",
@@ -226,18 +236,36 @@ function looksLikeSquarespace(headers: string[]): boolean {
   if (headers.includes("section")) return false;
   if (looksLikeOrders(headers)) return false;
   return (
-    headers.includes("name") &&
+    (headers.includes("name") || headers.includes("option_value_1")) &&
     (headers.includes("sku") || headers.includes("sell_price_usd") || headers.includes("qty") || headers.includes("product_type"))
   );
 }
 
-function squarespaceItemName(data: Row): string {
-  const bits = [cell(data, "name")];
-  for (const i of [1, 2, 3]) {
+function inheritSquarespaceProductFields(rows: Row[]): Row[] {
+  let lastName = "";
+  let lastCategories = "";
+  let lastTags = "";
+  return rows.map((data) => {
+    const next = { ...data };
+    if (cell(next, "name")) lastName = cell(next, "name");
+    else if (lastName) next.name = lastName;
+    if (cell(next, "categories")) lastCategories = cell(next, "categories");
+    else if (lastCategories) next.categories = lastCategories;
+    if (cell(next, "tags")) lastTags = cell(next, "tags");
+    else if (lastTags) next.tags = lastTags;
+    return next;
+  });
+}
+
+function squarespaceVariant(data: Row): string {
+  const bits: string[] = [];
+  for (const i of [1, 2, 3, 4, 5, 6]) {
     const value = cell(data, `option_value_${i}`);
-    if (value) bits.push(value);
+    if (!value) continue;
+    const name = cell(data, `option_name_${i}`);
+    bits.push(name ? `${name}: ${value}` : value);
   }
-  return bits.filter(Boolean).join(" / ");
+  return bits.join(" · ");
 }
 
 function squarespaceToMm3d(rows: Row[]): Row[] {
@@ -259,20 +287,20 @@ function squarespaceToMm3d(rows: Row[]): Row[] {
       barcode: "BIN-IMPORT",
     }),
   ];
-  for (const data of rows) {
-    const name = squarespaceItemName(data);
-    const sku = slugSku(cell(data, "sku") || name);
+  for (const data of inheritSquarespaceProductFields(rows)) {
+    const name = cell(data, "name");
+    const variant = squarespaceVariant(data);
+    const sku = slugSku(cell(data, "sku") || [name, variant].filter(Boolean).join(" "));
     if (!sku) continue;
     let sell = num(data, "sell_price_usd");
     if (/^yes$/i.test(cell(data, "on_sale")) && num(data, "sale_price")) sell = num(data, "sale_price");
-    const notes = [cell(data, "notes"), cell(data, "categories"), cell(data, "tags")]
-      .filter(Boolean)
-      .join(" · ");
+    const notes = [cell(data, "categories"), cell(data, "tags")].filter(Boolean).join(" · ");
     out.push(
       row({
         section: "items",
         sku,
         name: name || sku,
+        variant,
         type: "product",
         barcode: sku,
         sell_price_usd: sell,
@@ -366,6 +394,7 @@ export function exportCsv(inv: Inventory): string {
         section: "items",
         sku: item.sku,
         name: item.name,
+        variant: item.variant ?? "",
         type: item.type,
         barcode: item.barcode ?? "",
         cost_usd: item.costUsd,
@@ -516,6 +545,7 @@ export function importCsv(inv: Inventory, csvText: string): ImportResult {
         const existing = inv.getItemBySku(sku)!;
         inv.updateItem(existing.id, {
           name: cell(row, "name") || existing.name,
+          variant: cell(row, "variant") || existing.variant,
           type: (cell(row, "type") as ItemType) || existing.type,
           barcode: cell(row, "barcode") || existing.barcode,
           costUsd: num(row, "cost_usd", existing.costUsd),
@@ -527,6 +557,7 @@ export function importCsv(inv: Inventory, csvText: string): ImportResult {
       inv.createItem({
         sku,
         name: cell(row, "name") || sku,
+        variant: cell(row, "variant") || null,
         type: (cell(row, "type") as ItemType) || "part",
         barcode: cell(row, "barcode") || null,
         costUsd: num(row, "cost_usd"),

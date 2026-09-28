@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS items (
   id TEXT PRIMARY KEY,
   sku TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
+  variant TEXT,
   type TEXT NOT NULL,
   barcode TEXT UNIQUE,
   cost_usd REAL NOT NULL DEFAULT 0,

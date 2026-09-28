@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useInventory } from "../state";
 import { Field, Modal } from "../ui";
+import { itemLabel } from "../core/util";
 import type { Location, LocationArea, LocationNode, LocationType } from "../core/types";
 
 function Tree({
@@ -187,7 +188,7 @@ function BinPanel({
           {contents.items.map((row) => (
             <tr key={row.item.id}>
               <td>
-                {row.item.sku} · {row.item.name}
+                {row.item.sku} · {itemLabel(row.item)}
               </td>
               <td>{row.barcode ?? "—"}</td>
               <td className={row.qty < 0 ? "neg" : ""}>{row.qty}</td>

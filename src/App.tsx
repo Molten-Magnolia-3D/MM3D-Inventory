@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useInventory } from "./state";
+import { itemLabel } from "./core/util";
 import LoginPage from "./pages/Login";
 import HomePage from "./pages/Home";
 import ItemsPage from "./pages/Items";
@@ -232,7 +233,7 @@ function ScanPage() {
               {hit.kind === "bin"
                 ? hit.path
                 : hit.kind === "item"
-                  ? `${hit.item.sku} · ${hit.item.name}`
+                  ? `${hit.item.sku} · ${itemLabel(hit.item)}`
                   : hit.kind === "kit"
                     ? hit.kit.name
                     : hit.kind === "spool"

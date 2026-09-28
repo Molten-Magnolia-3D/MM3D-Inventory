@@ -31,6 +31,7 @@ export interface Item {
   id: string;
   sku: string;
   name: string;
+  variant: string | null;
   type: ItemType;
   barcode: string | null;
   costUsd: number;

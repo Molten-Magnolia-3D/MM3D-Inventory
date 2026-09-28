@@ -160,6 +160,7 @@ type ItemRow = {
   id: string;
   sku: string;
   name: string;
+  variant: string | null;
   type: string;
   barcode: string | null;
   cost_usd: number;
@@ -230,6 +231,7 @@ function mapItem(row: ItemRow): Item {
     id: row.id,
     sku: row.sku,
     name: row.name,
+    variant: row.variant || null,
     type: row.type as ItemType,
     barcode: row.barcode,
     costUsd: row.cost_usd,
@@ -318,6 +320,7 @@ export class Inventory {
 
   migrate(): void {
     this.db.exec(SCHEMA_SQL);
+    this.ensureColumn("items", "variant", "TEXT");
     const rev = this.db.get<{ value: string }>(
       "SELECT value FROM app_meta WHERE key = 'rev'",
     );
@@ -332,6 +335,12 @@ export class Inventory {
         "0",
       ]);
     }
+  }
+
+  private ensureColumn(table: string, column: string, ddl: string): void {
+    const cols = this.db.all<{ name: string }>(`PRAGMA table_info(${table})`);
+    if (cols.some((c) => c.name === column)) return;
+    this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
   }
 
   async save(): Promise<void> {
@@ -618,13 +627,13 @@ export class Inventory {
       params.push(opts.type);
     }
     if (opts?.query) {
-      clauses.push("(sku LIKE ? OR name LIKE ? OR IFNULL(barcode,'') LIKE ?)");
+      clauses.push("(sku LIKE ? OR name LIKE ? OR IFNULL(variant,'') LIKE ? OR IFNULL(barcode,'') LIKE ?)");
       const q = `%${opts.query}%`;
-      params.push(q, q, q);
+      params.push(q, q, q, q);
     }
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
     return this.db
-      .all<ItemRow>(`SELECT * FROM items ${where} ORDER BY name`, params)
+      .all<ItemRow>(`SELECT * FROM items ${where} ORDER BY name, IFNULL(variant,''), sku`, params)
       .map(mapItem);
   }
 
@@ -673,6 +682,7 @@ export class Inventory {
   createItem(input: {
     sku: string;
     name: string;
+    variant?: string | null;
     type: ItemType;
     barcode?: string | null;
     costUsd?: number;
@@ -684,6 +694,7 @@ export class Inventory {
       id: newId(),
       sku: slugSku(input.sku),
       name: input.name.trim(),
+      variant: input.variant?.trim() || null,
       type: input.type,
       barcode: input.barcode ? normalizeBarcode(input.barcode) : null,
       costUsd: roundMoney(input.costUsd ?? 0),
@@ -695,12 +706,13 @@ export class Inventory {
     if (!item.sku) throw new Error("SKU is required.");
     if (!item.name) throw new Error("Item name is required.");
     this.db.run(
-      `INSERT INTO items(id, sku, name, type, barcode, cost_usd, sell_price_usd, notes, archived, updated_at)
-       VALUES(?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO items(id, sku, name, variant, type, barcode, cost_usd, sell_price_usd, notes, archived, updated_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
       [
         item.id,
         item.sku,
         item.name,
+        item.variant,
         item.type,
         item.barcode,
         item.costUsd,
@@ -717,7 +729,7 @@ export class Inventory {
   updateItem(
     id: string,
     patch: Partial<
-      Pick<Item, "sku" | "name" | "type" | "barcode" | "costUsd" | "sellPriceUsd" | "notes" | "archived">
+      Pick<Item, "sku" | "name" | "variant" | "type" | "barcode" | "costUsd" | "sellPriceUsd" | "notes" | "archived">
     >,
   ): Item {
     this.assertWritable();
@@ -728,6 +740,8 @@ export class Inventory {
       ...patch,
       sku: patch.sku ? slugSku(patch.sku) : current.sku,
       name: patch.name?.trim() ?? current.name,
+      variant:
+        patch.variant === undefined ? current.variant : patch.variant?.trim() || null,
       barcode:
         patch.barcode === undefined
           ? current.barcode
@@ -740,10 +754,11 @@ export class Inventory {
       updatedAt: nowIso(),
     };
     this.db.run(
-      `UPDATE items SET sku=?, name=?, type=?, barcode=?, cost_usd=?, sell_price_usd=?, notes=?, archived=?, updated_at=? WHERE id=?`,
+      `UPDATE items SET sku=?, name=?, variant=?, type=?, barcode=?, cost_usd=?, sell_price_usd=?, notes=?, archived=?, updated_at=? WHERE id=?`,
       [
         next.sku,
         next.name,
+        next.variant,
         next.type,
         next.barcode,
         next.costUsd,
@@ -1770,7 +1785,7 @@ export class Inventory {
         kind: "item",
         barcode: item.barcode,
         title: item.name,
-        subtitle: item.sku,
+        subtitle: item.variant ? `${item.sku} · ${item.variant}` : item.sku,
       });
     }
     for (const kit of this.listKits()) {

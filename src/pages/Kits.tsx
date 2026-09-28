@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInventory } from "../state";
 import { Field, Modal, Money } from "../ui";
+import { itemLabel } from "../core/util";
 import type { FilamentPick } from "../core/types";
 
 export default function KitsPage() {
@@ -241,7 +242,7 @@ export function KitDetailPage() {
               return (
                 <tr key={b.id}>
                   <td>
-                    {item ? `${item.sku} · ${item.name}` : nested ? `Nested kit ${nested.name}` : "Filament only"}
+                    {item ? `${item.sku} · ${itemLabel(item)}` : nested ? `Nested kit ${nested.name}` : "Filament only"}
                   </td>
                   <td>{b.qty}</td>
                   <td>
@@ -301,7 +302,7 @@ export function KitDetailPage() {
                 <option value="">(none)</option>
                 {items.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.sku} · {item.name}
+                    {item.sku} · {itemLabel(item)}
                   </option>
                 ))}
               </select>

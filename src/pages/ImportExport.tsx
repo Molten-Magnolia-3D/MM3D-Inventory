@@ -44,8 +44,9 @@ export default function ImportExportPage() {
         <div>
           <h1>CSV import / export</h1>
           <p>
-            Import the MM3D template, or a Squarespace product export (Products → Export all). Orders CSVs are skipped on
-            purpose — we need the product file with Title, SKU, Price, and Stock.
+            Import the MM3D template, or a Squarespace product export (Products → Export all). Each Squarespace SKU
+            becomes an item: the product title is the name, and squadron / size / color choices land in Variant.
+            Orders CSVs are skipped on purpose.
           </p>
         </div>
       </div>
@@ -69,8 +70,9 @@ export default function ImportExportPage() {
             <code>section</code> tells the MM3D template which table the row belongs to.
           </li>
           <li>
-            A Squarespace product CSV (Title, SKU, Price, Stock) is mapped automatically. Variants become their own SKUs.
-            Stock lands in <code>Imported / Squarespace</code>.
+            A Squarespace product CSV is mapped automatically. The Title stays as the item name. Option columns
+            (Squadron, Size, Color, …) go in <code>variant</code>. Follow-up rows with a blank Title inherit the
+            product name. Stock lands in <code>Imported / Squarespace</code>.
           </li>
           <li>
             Location <code>path</code> uses slashes: <code>Workshop / Hardware room / Bin A1</code>.
