@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
+import { InstallAppCard } from "../InstallApp";
 import { useInventory } from "../state";
 import { Field } from "../ui";
 
 export default function LoginPage() {
-  const { inv, refresh, cloudLogin } = useInventory();
+  const { inv, refresh, cloudLogin, platform } = useInventory();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +46,8 @@ export default function LoginPage() {
         <h1>{firstRun ? "Create your owner login" : "Welcome back"}</h1>
         <p className="lede">
           {firstRun
-            ? "One email and password for this shop. Data lives on this PC and can sync to your cloud project when you add Firebase in Settings."
-            : "Works offline. Syncs when the shop PC is back online."}
+            ? `One email and password for this shop. Data lives on this ${platform.isElectron ? "PC" : "device"} and can sync to your cloud project when you add Firebase in Settings.`
+            : `Works offline. Syncs when this ${platform.isElectron ? "PC" : "device"} is back online.`}
         </p>
         {error && <div className="danger-banner">{error}</div>}
         <Field label="Email">
@@ -71,6 +72,7 @@ export default function LoginPage() {
         <button className="btn" type="submit" disabled={busy}>
           {firstRun ? "Create account" : "Sign in"}
         </button>
+        <InstallAppCard compact />
       </form>
     </div>
   );

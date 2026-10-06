@@ -1,4 +1,4 @@
-name: Build Windows app
+name: Build MM3D Inventory
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   windows:
@@ -66,8 +68,12 @@ jobs:
             release/MM3D-Inventory-Portable-*.exe
             release/latest.yml
           body: |
-            Windows builds of **MM3D Inventory** (every push publishes a new version).
+            Builds of **MM3D Inventory** (every push publishes a new version).
 
+            ### Phone
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** on your phone, then Add to Home Screen / Install app. A `MM3D-Inventory-Phone-*.zip` web build is also attached when the phone job finishes.
+
+            ### Windows
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
             - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
 
@@ -76,3 +82,87 @@ jobs:
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 
             Create your owner email/password on first launch. Optional: Settings → Load sample data.
+
+  phone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install, test, and stamp version
+        id: ver
+        run: |
+          npm ci
+          npm test
+          node scripts/stamp-release-version.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Build phone / browser app
+        run: npm run build:web
+
+      - name: Zip phone web app
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          zip -r "MM3D-Inventory-Phone-${VERSION}.zip" dist
+          ls -la MM3D-Inventory-Phone-*.zip dist
+
+      - name: Upload phone zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: MM3D-Inventory-Phone
+          path: MM3D-Inventory-Phone-*.zip
+          if-no-files-found: error
+
+      - name: Setup Pages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Attach phone zip to GitHub Release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: MM3D Inventory ${{ steps.ver.outputs.version }}
+          draft: false
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: |
+            MM3D-Inventory-Phone-*.zip
+          body: |
+            Builds of **MM3D Inventory** (every push publishes a new version).
+
+            ### Phone
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** on your phone, then Add to Home Screen / Install app.
+
+            - **MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip** — the same web app, for archival
+
+            ### Windows
+            - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
+            - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
+
+            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+
+            Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
+
+            Create your owner email/password on first launch. Optional: Settings → Load sample data.
+
+  pages:
+    needs: phone
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

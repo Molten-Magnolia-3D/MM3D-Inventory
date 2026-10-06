@@ -1,6 +1,21 @@
 # MM3D Inventory
 
-Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations, kit recipes, and filament spools.
+Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations, kit recipes, and filament spools. The same app also runs as a phone-friendly web app you can install on a home screen.
+
+## Open on a phone
+
+After CI finishes, open this URL on the phone:
+
+**[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
+
+Then install it:
+
+- **iPhone (Safari):** Share → **Add to Home Screen**
+- **Android (Chrome):** menu → **Install app** or **Add to Home screen**
+
+The phone copy works offline after the first load. It keeps its own local ledger. Turn on cloud sync in Settings if you want it to share data with the shop PC — only one device holds the lock at a time.
+
+If Pages is still publishing, download **MM3D-Inventory-Phone-*.zip** from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** or the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab (`MM3D-Inventory-Phone` artifact). That zip is the same files the live URL serves; the URL is the easy way to test.
 
 ## Download for Windows
 
@@ -9,7 +24,7 @@ Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3
 - **MM3D-Inventory-Setup-*.exe** — installer (recommended; auto-updates from GitHub Releases on every push)
 - **MM3D-Inventory-Portable-*.exe** — no install; double-click to run (does not auto-update)
 
-If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build Windows app** run, and download the `MM3D-Inventory-Windows` artifact.
+If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build MM3D Inventory** run, and download the `MM3D-Inventory-Windows` artifact.
 
 Windows SmartScreen may warn because the app is not code-signed yet. Choose **More info** → **Run anyway**.
 
@@ -21,7 +36,7 @@ This repository is standalone. Filament tracking is inspired by SpoolmeterX, but
 
 - Email/password login (one owner account)
 - Works fully offline; syncs when back online
-- One PC at a time via a cloud device lock (take over from Settings if a heartbeat is stale)
+- One device at a time via a cloud device lock (take over from Settings if a heartbeat is stale)
 - Items: parts, products, consumables, filament SKUs
 - Simple each-counts; filament also tracks remaining grams
 - Nested locations (building → room → shelf → bin → tote)
@@ -36,6 +51,7 @@ This repository is standalone. Filament tracking is inspired by SpoolmeterX, but
 - Nested BOMs; “can make” updates when shared stock or filament grams change
 - Sell button on a kit: qty + note, pick spool(s) for grams, uses the kit’s saved selling price
 - Spool records, usage log, low stock by remaining grams
+- Phone/PWA layout with a bottom nav you can install from GitHub Pages
 
 Not in v1: phone/webcam scanning, photos, vendor POs, sales orders, Shopify/Etsy, extra reorder-point UI (except filament low-stock).
 
@@ -47,11 +63,20 @@ npm test
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 — the UI runs in a browser with the same SQLite engine (saved in IndexedDB). That is handy for trying flows. The Windows app is the real product.
+Open http://127.0.0.1:5173 — the UI runs in a browser with the same SQLite engine (saved in IndexedDB). That is handy for trying flows. The Windows app is the real shop-PC product; the GitHub Pages URL is the phone product.
 
 ```bash
 npm run dev:electron
 ```
+
+To try the production web build on a phone on the same Wi-Fi:
+
+```bash
+npm run build:web
+npm run preview:lan
+```
+
+Then open `http://<this-pc-ip>:4173` in the phone browser.
 
 ## Windows installers
 
@@ -59,7 +84,7 @@ npm run dev:electron
 npm run build
 ```
 
-`electron-builder` writes NSIS and portable builds under `release/`. CI stamps a new version and publishes a GitHub Release on **every push**, so an installed Setup copy can auto-update.
+`electron-builder` writes NSIS and portable builds under `release/`. CI stamps a new version and publishes a GitHub Release on **every push**, so an installed Setup copy can auto-update. The same run also publishes the phone web app to GitHub Pages.
 
 Installed Setup copies check for a newer GitHub Release after launch and every 15 minutes, download it in the background, and install when you restart (or when you quit). Settings → **Check for updates** does the same on demand. Portable EXEs skip this — use Setup on the shop PC.
 
@@ -69,7 +94,7 @@ Installed Setup copies check for a newer GitHub Release after launch and every 1
 2. Settings → **Load sample data** if you want the Harrier 231 / 542 example, or **CSV** → download the template and fit your spreadsheet.
 3. Optional cloud: create a Firebase project, enable **Email/Password** auth and **Cloud Firestore**, paste the web config JSON in Settings, enable cloud, then Sync.
 
-Local data is always the working copy. If the internet drops, keep selling and counting. When you are online again, Settings → Sync uploads the ledger. Only one PC should hold the lock at a time.
+Local data is always the working copy. If the internet drops, keep selling and counting. When you are online again, Settings → Sync uploads the ledger. Only one device should hold the lock at a time.
 
 ## Scan and labels
 

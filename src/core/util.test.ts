@@ -23,6 +23,12 @@ describe("boot helpers", () => {
     expect(sqlAssetUrl("sql-wasm-browser.wasm", "http://127.0.0.1:5173/#/login")).toBe(
       "http://127.0.0.1:5173/sql-wasm-browser.wasm",
     );
+    expect(
+      sqlAssetUrl(
+        "sql-wasm-browser.wasm",
+        "https://molten-magnolia-3d.github.io/MM3D-Inventory/#/items",
+      ),
+    ).toBe("https://molten-magnolia-3d.github.io/MM3D-Inventory/sql-wasm-browser.wasm");
   });
 
   it("times out a hanging promise", async () => {

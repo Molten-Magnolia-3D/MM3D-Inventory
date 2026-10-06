@@ -84,6 +84,18 @@ function download(filename: string, data: Uint8Array | string, mime = "applicati
   URL.revokeObjectURL(url);
 }
 
+function webDeviceLabel(): { hostname: string; platform: string } {
+  const ua = navigator.userAgent;
+  const mobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  if (standalone && mobile) return { hostname: "MM3D phone", platform: "mobile" };
+  if (mobile) return { hostname: "phone browser", platform: "mobile" };
+  if (standalone) return { hostname: "MM3D web", platform: "web" };
+  return { hostname: window.location.hostname || "browser", platform: "web" };
+}
+
 async function fetchPublicWasm(): Promise<Uint8Array | null> {
   for (const name of ["sql-wasm-browser.wasm", "sql-wasm.wasm"]) {
     try {
@@ -143,7 +155,7 @@ export function createPlatform(): Platform {
         id = crypto.randomUUID();
         await idbSet("device-id", id);
       }
-      return { id, hostname: window.location.hostname || "browser", platform: "web" };
+      return { id, ...webDeviceLabel() };
     },
     async saveFile(filename, data, mime) {
       download(filename, data, mime);
@@ -165,10 +177,10 @@ export function createPlatform(): Platform {
     },
     locateWasm: (file) => sqlAssetUrl(file),
     async getUpdateStatus() {
-      return unavailableUpdate("web", "Updates apply to the installed Windows Setup app.");
+      return unavailableUpdate("web", "Phone and browser copies pick up a new build the next time you open the page.");
     },
     async checkForUpdates() {
-      return unavailableUpdate("web", "Updates apply to the installed Windows Setup app.");
+      return unavailableUpdate("web", "Phone and browser copies pick up a new build the next time you open the page.");
     },
     async installUpdate() {
       return false;

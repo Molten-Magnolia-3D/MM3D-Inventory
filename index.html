@@ -4,12 +4,20 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>MM3D Inventory</title>
+    <meta name="theme-color" content="#140f0c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MM3D" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' mm3d:; script-src 'self' 'wasm-unsafe-eval' mm3d:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' mm3d: blob: https://*.firebaseio.com https://*.googleapis.com https://*.gstatic.com https://*.firebase.com https://*.cloudworkstations.dev wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; worker-src 'self' blob:;"
+      content="default-src 'self' mm3d:; script-src 'self' 'wasm-unsafe-eval' mm3d:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' mm3d: blob: https://*.firebaseio.com https://*.googleapis.com https://*.gstatic.com https://*.firebase.com https://*.cloudworkstations.dev wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; worker-src 'self' blob:; manifest-src 'self';"
     />
   </head>
   <body>

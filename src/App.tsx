@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   Boxes,
   MapPinned,
@@ -11,9 +11,11 @@ import {
   FileSpreadsheet,
   Settings,
   LayoutDashboard,
+  MoreHorizontal,
 } from "lucide-react";
 import { useInventory } from "./state";
 import { itemLabel } from "./core/util";
+import { isMoreNavPath } from "./nav";
 import LoginPage from "./pages/Login";
 import HomePage from "./pages/Home";
 import ItemsPage from "./pages/Items";
@@ -41,8 +43,19 @@ const links = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const dockLinks = [
+  { to: "/", label: "Shop", icon: LayoutDashboard, end: true },
+  { to: "/scan", label: "Scan", icon: ScanBarcode },
+  { to: "/items", label: "Items", icon: Boxes },
+  { to: "/kits", label: "Kits", icon: Layers },
+];
+
+const moreLinks = links.filter((link) => isMoreNavPath(link.to));
+
 export default function App() {
   const { ready, error, inv, user, online, lock } = useInventory();
+  const [moreOpen, setMoreOpen] = useState(false);
+
   if (error && !inv) {
     return (
       <div className="login-screen">
@@ -91,6 +104,7 @@ export default function App() {
         </div>
       </aside>
       <div className="main">
+        <MobileTop />
         <ScanBar />
         <div className="content">
           {inv?.readOnly && inv.readOnlyReason && <div className="danger-banner">{inv.readOnlyReason}</div>}
@@ -112,6 +126,99 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
+      </div>
+      <MobileDock moreOpen={moreOpen} onMore={() => setMoreOpen(true)} />
+      {moreOpen && <MoreSheet onClose={() => setMoreOpen(false)} />}
+    </div>
+  );
+}
+
+function MobileTop() {
+  const { online, lock, inv } = useInventory();
+  return (
+    <header className="mobile-top">
+      <div className="brand">
+        <div className="brand-mark">M</div>
+        <div>
+          <strong className="brand-type">MM3D Inventory</strong>
+          <small>
+            {online ? "Online" : "Offline"}
+            {lock?.holder ? ` · ${lock.hostname}` : ""}
+            {inv?.readOnly ? " · read-only" : ""}
+          </small>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function MobileDock({ moreOpen, onMore }: { moreOpen: boolean; onMore: () => void }) {
+  const location = useLocation();
+  const moreActive = moreOpen || isMoreNavPath(location.pathname);
+  return (
+    <nav className="mobile-dock" aria-label="Phone">
+      {dockLinks.map((link) => (
+        <NavLink
+          key={link.to}
+          to={link.to}
+          end={link.end}
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
+          <link.icon size={20} />
+          {link.label}
+        </NavLink>
+      ))}
+      <button type="button" className={moreActive ? "active" : ""} onClick={onMore} aria-haspopup="dialog">
+        <MoreHorizontal size={20} />
+        More
+      </button>
+    </nav>
+  );
+}
+
+function MoreSheet({ onClose }: { onClose: () => void }) {
+  const { online, lock, inv } = useInventory();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="sheet-back" onClick={onClose} role="presentation">
+      <div
+        className="sheet"
+        role="dialog"
+        aria-label="More shop pages"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sheet-handle" />
+        <div className="spread" style={{ marginBottom: 12 }}>
+          <h2>More</h2>
+          <button type="button" className="btn ghost" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <nav className="sheet-nav">
+          {moreLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) => (isActive ? "active" : "")}
+              onClick={onClose}
+            >
+              <link.icon size={18} />
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+        <p className="sheet-foot">
+          {online ? "Online" : "Offline — still fully usable"}
+          {lock?.holder ? ` · lock on ${lock.hostname}` : ""}
+          {inv?.readOnly ? " · read-only" : ""}
+        </p>
       </div>
     </div>
   );
@@ -195,6 +302,11 @@ function ScanBar() {
           placeholder="Scan or type a barcode, then Enter"
           title="Scan or type a barcode, then press Enter. Works for bins, SKUs, kits, and spools."
           autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          enterKeyHint="search"
+          inputMode="text"
+          name="scan"
         />
       </div>
       {miss && <span className="badge danger">{miss}</span>}

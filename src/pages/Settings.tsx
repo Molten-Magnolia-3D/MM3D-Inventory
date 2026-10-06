@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { loadSampleWorkshop } from "../core/seed";
+import { InstallAppCard } from "../InstallApp";
 import { useInventory } from "../state";
 import { Field } from "../ui";
 import { useUpdateStatus } from "../useUpdateStatus";
@@ -52,7 +53,7 @@ export default function SettingsPage() {
         <div>
           <h1>Settings</h1>
           <p>
-            Signed in as {user?.email}. {platform.isElectron ? "Windows desktop" : "Browser"} ·{" "}
+            Signed in as {user?.email}. {platform.isElectron ? "Windows desktop" : "Phone / browser"} ·{" "}
             {online ? "online" : "offline"}
             {update?.version ? ` · v${update.version}` : ""}
           </p>
@@ -60,6 +61,7 @@ export default function SettingsPage() {
       </div>
       {message && <div className="warn-banner">{message}</div>}
       {error && <div className="danger-banner">{error}</div>}
+      <InstallAppCard />
       {lock && !lock.holder && (
         <div className="danger-banner">
           Another PC holds the lock ({lock.hostname}). This copy is read-only until you take over.
@@ -69,9 +71,9 @@ export default function SettingsPage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>App updates</h2>
         <p className="empty" style={{ paddingTop: 0 }}>
-          The installed Setup app checks GitHub after launch and every 15 minutes. Each push to the repo publishes a
-          newer version, which downloads in the background. Portable EXEs do not auto-update — install with Setup if you
-          want that.
+          {platform.isElectron
+            ? "The installed Setup app checks GitHub after launch and every 15 minutes. Each push to the repo publishes a newer version, which downloads in the background. Portable EXEs do not auto-update — install with Setup if you want that."
+            : "This phone/browser copy loads the latest GitHub Pages build the next time you open it. The Windows Setup app on the shop PC still auto-updates from GitHub Releases."}
         </p>
         {update && <p>{update.message || `This copy is v${update.version}.`}</p>}
         {update?.state === "downloading" && (
@@ -79,24 +81,26 @@ export default function SettingsPage() {
             <span style={{ width: `${update.percent ?? 0}%` }} />
           </div>
         )}
-        <div className="row">
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={checking || update?.state === "checking" || update?.state === "downloading"}
-            onClick={() => {
-              setChecking(true);
-              void platform.checkForUpdates().finally(() => setChecking(false));
-            }}
-          >
-            {checking || update?.state === "checking" ? "Checking…" : "Check for updates"}
-          </button>
-          {update?.state === "ready" && (
-            <button className="btn" type="button" onClick={() => void platform.installUpdate()}>
-              Restart to update
+        {platform.isElectron && (
+          <div className="row">
+            <button
+              className="btn secondary"
+              type="button"
+              disabled={checking || update?.state === "checking" || update?.state === "downloading"}
+              onClick={() => {
+                setChecking(true);
+                void platform.checkForUpdates().finally(() => setChecking(false));
+              }}
+            >
+              {checking || update?.state === "checking" ? "Checking…" : "Check for updates"}
             </button>
-          )}
-        </div>
+            {update?.state === "ready" && (
+              <button className="btn" type="button" onClick={() => void platform.installUpdate()}>
+                Restart to update
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -117,11 +121,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Cloud sync (one PC at a time)</h2>
+        <h2>Cloud sync (one device at a time)</h2>
         <p className="empty" style={{ paddingTop: 0 }}>
           Create a Firebase project, enable Email/Password authentication and Cloud Firestore, then paste the web
-          config object below. The shop database stays on this PC and uploads when you are online. If the internet
-          drops, keep working — sync catches up later.
+          config object below. The shop database stays on this device and uploads when you are online. If the internet
+          drops, keep working — sync catches up later. A phone install and the Windows PC are separate copies unless
+          you sync; only one device should hold the lock at a time.
         </p>
         <form onSubmit={saveCloud}>
           <Field label="Enable cloud">
@@ -149,7 +154,7 @@ export default function SettingsPage() {
               type="button"
               onClick={() => void sync(true)}
             >
-              Sync / take over this PC
+              Sync / take over this device
             </button>
           </div>
         </form>
