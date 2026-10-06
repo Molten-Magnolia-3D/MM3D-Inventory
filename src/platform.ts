@@ -1,3 +1,4 @@
+import { version as appVersion } from "../package.json";
 import type { DeviceInfo } from "./core/types";
 import { asUint8Array, sqlAssetUrl } from "./core/util";
 import { unavailableUpdate, type UpdateStatus } from "./core/update";
@@ -177,10 +178,10 @@ export function createPlatform(): Platform {
     },
     locateWasm: (file) => sqlAssetUrl(file),
     async getUpdateStatus() {
-      return unavailableUpdate("web", "Phone and browser copies pick up a new build the next time you open the page.");
+      return unavailableUpdate(appVersion, "Phone and browser copies pick up a new build the next time you open the page.");
     },
     async checkForUpdates() {
-      return unavailableUpdate("web", "Phone and browser copies pick up a new build the next time you open the page.");
+      return unavailableUpdate(appVersion, "Phone and browser copies pick up a new build the next time you open the page.");
     },
     async installUpdate() {
       return false;

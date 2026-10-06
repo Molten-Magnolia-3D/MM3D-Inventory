@@ -465,6 +465,7 @@ input[type="checkbox"] {
   }
   .login-card h1 { font-size: 28px; }
   .login-card { padding: 22px 18px; }
+  .login-card .btn { width: 100%; }
 
   .mobile-dock {
     display: grid;
