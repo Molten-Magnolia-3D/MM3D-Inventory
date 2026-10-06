@@ -116,16 +116,6 @@ jobs:
           path: MM3D-Inventory-Phone-*.zip
           if-no-files-found: error
 
-      - name: Setup Pages
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
       - name: Attach phone zip to GitHub Release
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
@@ -154,6 +144,18 @@ jobs:
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 
             Create your owner email/password on first launch. Optional: Settings → Load sample data.
+
+      - name: Setup Pages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
 
   pages:
     needs: phone
