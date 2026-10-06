@@ -4,9 +4,14 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 ## Open on a phone
 
-After CI finishes, open this URL on the phone:
+After CI finishes, the phone web app is published in two places:
 
-**[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
+1. **[Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** — `MM3D-Inventory-Phone-*.zip` (same files)
+2. **Live URL** (after Pages is on): **[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
+
+CI also force-pushes the web build to the `gh-pages` branch. If the live URL 404s, this is a one-time GitHub setting the repo owner has to click:
+
+GitHub → **MM3D-Inventory** → **Settings** → **Pages** → **Deploy from a branch** → `gh-pages` / `/ (root)` → Save.
 
 Then install it:
 

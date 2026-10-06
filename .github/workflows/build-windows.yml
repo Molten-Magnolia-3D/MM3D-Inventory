@@ -85,6 +85,8 @@ jobs:
 
   phone:
     runs-on: ubuntu-latest
+    outputs:
+      pages_ready: ${{ steps.pages_setup.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -145,21 +147,35 @@ jobs:
 
             Create your owner email/password on first launch. Optional: Settings → Load sample data.
 
-      - name: Setup Pages
+      - name: Push phone app to gh-pages
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init
+          git checkout -b gh-pages
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "Publish phone web app"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+
+      - name: Setup Pages
+        id: pages_setup
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: steps.pages_setup.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   pages:
     needs: phone
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.phone.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
