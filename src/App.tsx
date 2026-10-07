@@ -12,10 +12,13 @@ import {
   Settings,
   LayoutDashboard,
   MoreHorizontal,
+  Camera,
 } from "lucide-react";
 import { useInventory } from "./state";
 import { itemLabel } from "./core/util";
 import { isMoreNavPath } from "./nav";
+import CameraScan from "./CameraScan";
+import { cameraScanAvailable, hitRoute, normalizeScannedCode } from "./scan";
 import LoginPage from "./pages/Login";
 import HomePage from "./pages/Home";
 import ItemsPage from "./pages/Items";
@@ -250,11 +253,13 @@ function UpdateBanner() {
 }
 
 function ScanBar() {
-  const { inv } = useInventory();
+  const { inv, platform } = useInventory();
   const nav = useNavigate();
   const [code, setCode] = useState("");
   const [miss, setMiss] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const showCamera = cameraScanAvailable(platform.isElectron);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -267,65 +272,88 @@ function ScanBar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function go(hit: LookupHit) {
-    if (hit.kind === "bin") nav(`/locations?bin=${hit.location.id}`);
-    else if (hit.kind === "item") nav(`/items/${hit.item.id}`);
-    else if (hit.kind === "kit") nav(`/kits/${hit.kit.id}`);
-    else if (hit.kind === "spool") nav(`/filament/${hit.spool.id}`);
-  }
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  function applyCode(raw: string) {
     if (!inv) return;
-    const hit = inv.lookup(code);
+    const value = normalizeScannedCode(raw);
+    if (!value) return;
+    setCode(value);
+    const hit = inv.lookup(value);
     if (hit.kind === "none") {
-      setMiss(`No barcode match for “${code}”.`);
-      nav(`/scan?q=${encodeURIComponent(code)}`);
+      setMiss(`No barcode match for “${value}”.`);
+      nav(`/scan?q=${encodeURIComponent(value)}`);
       return;
     }
     setMiss(null);
     setCode("");
-    go(hit);
+    const to = hitRoute(hit);
+    if (to) nav(to);
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    applyCode(code);
   }
 
   return (
-    <form className="scan-bar" onSubmit={onSubmit}>
-      <div className="scan-wrap">
-        <ScanBarcode size={18} />
-        <input
-          ref={inputRef}
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-            setMiss(null);
+    <>
+      <form className="scan-bar" onSubmit={onSubmit}>
+        <div className="scan-wrap">
+          <ScanBarcode size={18} />
+          <input
+            ref={inputRef}
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              setMiss(null);
+            }}
+            placeholder="Scan, type, or use the camera"
+            title="Scan or type a barcode, then press Enter. On a phone, use the camera button for Code 128 and QR labels."
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            enterKeyHint="search"
+            inputMode="text"
+            name="scan"
+          />
+        </div>
+        {showCamera && (
+          <button
+            type="button"
+            className="btn secondary cam-btn"
+            onClick={() => setCameraOpen(true)}
+            aria-label="Scan with camera"
+          >
+            <Camera size={18} />
+            Camera
+          </button>
+        )}
+        {miss && <span className="badge danger">{miss}</span>}
+      </form>
+      {cameraOpen && (
+        <CameraScan
+          onCode={(value) => {
+            setCameraOpen(false);
+            applyCode(value);
           }}
-          placeholder="Scan or type a barcode, then Enter"
-          title="Scan or type a barcode, then press Enter. Works for bins, SKUs, kits, and spools."
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          enterKeyHint="search"
-          inputMode="text"
-          name="scan"
+          onClose={() => setCameraOpen(false)}
         />
-      </div>
-      {miss && <span className="badge danger">{miss}</span>}
-    </form>
+      )}
+    </>
   );
 }
 
 function ScanPage() {
-  const { inv } = useInventory();
+  const { inv, platform } = useInventory();
   const [q, setQ] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
   const nav = useNavigate();
   if (!inv) return null;
   const hits = q.trim() ? inv.search(q) : [];
+  const showCamera = cameraScanAvailable(platform.isElectron);
 
   function open(hit: LookupHit) {
-    if (hit.kind === "bin") nav(`/locations?bin=${hit.location.id}`);
-    else if (hit.kind === "item") nav(`/items/${hit.item.id}`);
-    else if (hit.kind === "kit") nav(`/kits/${hit.kit.id}`);
-    else if (hit.kind === "spool") nav(`/filament/${hit.spool.id}`);
+    const to = hitRoute(hit);
+    if (to) nav(to);
   }
 
   return (
@@ -333,9 +361,29 @@ function ScanPage() {
       <div className="page-head">
         <div>
           <h1>Scan / lookup</h1>
-          <p>USB and Bluetooth scanners type into the top box. This page is for fuzzy search when a code is unknown.</p>
+          <p>
+            On a phone, use Camera for Code 128 and QR labels. USB and Bluetooth scanners still type into the top box.
+            This page is also for fuzzy search when a code is unknown.
+          </p>
         </div>
+        {showCamera && (
+          <button type="button" className="btn" onClick={() => setCameraOpen(true)}>
+            Scan with camera
+          </button>
+        )}
       </div>
+      {cameraOpen && (
+        <CameraScan
+          onCode={(value) => {
+            setCameraOpen(false);
+            const hit = inv.lookup(normalizeScannedCode(value));
+            const to = hitRoute(hit);
+            if (to) nav(to);
+            else nav(`/scan?q=${encodeURIComponent(normalizeScannedCode(value))}`);
+          }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
       <Fieldish value={q} onChange={setQ} />
       <div className="card">
         {hits.length === 0 && <p className="empty">No matches.</p>}

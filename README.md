@@ -4,10 +4,9 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 ## Open on a phone
 
-After CI finishes, the phone web app is published in two places:
+**Download:** **[Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** — `MM3D-Inventory-Phone-*.zip` (and the Windows EXEs).
 
-1. **[Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** — `MM3D-Inventory-Phone-*.zip` (same files)
-2. **Live URL** (after Pages is on): **[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
+**Live URL** (after Pages is on): **[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
 
 CI also force-pushes the web build to the `gh-pages` branch. If the live URL 404s, this is a one-time GitHub setting the repo owner has to click:
 
@@ -52,13 +51,14 @@ This repository is standalone. Filament tracking is inspired by SpoolmeterX, but
 - USD cost, selling price, rough margin
 - CSV import/export plus a shipped template (`templates/mm3d-inventory-template.csv`)
 - USB/Bluetooth scanners type into the top search box
+- Phone camera scanning for Code 128 and QR labels
 - Label PDF sheet (Code 128 + QR, letter 30-up)
 - Nested BOMs; “can make” updates when shared stock or filament grams change
 - Sell button on a kit: qty + note, pick spool(s) for grams, uses the kit’s saved selling price
 - Spool records, usage log, low stock by remaining grams
 - Phone/PWA layout with a bottom nav you can install from GitHub Pages
 
-Not in v1: phone/webcam scanning, photos, vendor POs, sales orders, Shopify/Etsy, extra reorder-point UI (except filament low-stock).
+Not in v1: photos, vendor POs, sales orders, Shopify/Etsy, extra reorder-point UI (except filament low-stock).
 
 ## Run on this PC (dev)
 
@@ -103,7 +103,7 @@ Local data is always the working copy. If the internet drops, keep selling and c
 
 ## Scan and labels
 
-A USB or Bluetooth wedge scanner should land in the top barcode box and send Enter. BIN codes open the bin contents list. Item, kit, and spool codes open that record.
+A USB or Bluetooth wedge scanner should land in the top barcode box and send Enter. On a phone, tap **Camera** and point at a Code 128 bar or QR. BIN codes open the bin contents list. Item, kit, and spool codes open that record.
 
 Labels export a letter-size 3×10 sheet. Each label has a Code 128 bar (what most USB scanners want) and a QR with the same value.
 

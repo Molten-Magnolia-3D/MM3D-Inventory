@@ -71,7 +71,9 @@ jobs:
             Builds of **MM3D Inventory** (every push publishes a new version).
 
             ### Phone
-            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** on your phone, then Add to Home Screen / Install app. A `MM3D-Inventory-Phone-*.zip` web build is also attached when the phone job finishes.
+            **Download:** [Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest) — `MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip`
+
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** after GitHub Pages is enabled (Settings → Pages → Deploy from branch `gh-pages`). Then Add to Home Screen / Install app. Camera scanning works on the phone copy.
 
             ### Windows
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
@@ -133,9 +135,9 @@ jobs:
             Builds of **MM3D Inventory** (every push publishes a new version).
 
             ### Phone
-            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** on your phone, then Add to Home Screen / Install app.
+            **Download:** [Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest) — `MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip`
 
-            - **MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip** — the same web app, for archival
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** after GitHub Pages is enabled (Settings → Pages → Deploy from branch `gh-pages`). Then Add to Home Screen / Install app. Camera scanning works on the phone copy.
 
             ### Windows
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)

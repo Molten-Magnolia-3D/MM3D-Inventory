@@ -76,7 +76,7 @@ function createWindow() {
     height: 920,
     minWidth: 1100,
     minHeight: 720,
-    backgroundColor: "#16110e",
+    backgroundColor: "#ffffff",
     title: "MM3D Inventory",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
