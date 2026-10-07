@@ -471,6 +471,13 @@ input[type="checkbox"] {
     position: sticky;
     top: 0;
   }
+  .cam-btn {
+    min-width: 44px;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .cam-btn-label { display: none; }
   .scan-bar input,
   .field input,
   .field select,

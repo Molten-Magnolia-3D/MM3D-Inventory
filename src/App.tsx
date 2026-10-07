@@ -324,7 +324,7 @@ function ScanBar() {
             aria-label="Scan with camera"
           >
             <Camera size={18} />
-            Camera
+            <span className="cam-btn-label">Camera</span>
           </button>
         )}
         {miss && <span className="badge danger">{miss}</span>}
