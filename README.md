@@ -4,31 +4,33 @@ Windows desktop inventory for **Molten Magnolia 3D** — parts, nested locations
 
 ## Open on a phone
 
-**Download:** **[Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** — `MM3D-Inventory-Phone-*.zip` (and the Windows EXEs).
+**This is the phone app:** **[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
 
-**Live URL** (after Pages is on): **[https://molten-magnolia-3d.github.io/MM3D-Inventory/](https://molten-magnolia-3d.github.io/MM3D-Inventory/)**
+There is no App Store / Play Store file. Open that URL in Safari (iPhone) or Chrome (Android), then:
 
-CI also force-pushes the web build to the `gh-pages` branch. If the live URL 404s, this is a one-time GitHub setting the repo owner has to click:
+- **iPhone:** Share → **Add to Home Screen**
+- **Android:** menu → **Install app** or **Add to Home screen**
+
+Do not download the zip and expect it to install. GitHub’s release **Assets** list starts collapsed, so a “Download” link that only opens the release page looks broken — use the URL above, or the **[direct download page](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)**.
+
+The org root `https://molten-magnolia-3d.github.io/` is a 404 on purpose. The app lives under `/MM3D-Inventory/`.
+
+CI force-pushes the web build to the `gh-pages` branch. If the live URL 404s, this is a one-time GitHub setting the repo owner has to click:
 
 GitHub → **MM3D-Inventory** → **Settings** → **Pages** → **Deploy from a branch** → `gh-pages` / `/ (root)` → Save.
 
-Then install it:
-
-- **iPhone (Safari):** Share → **Add to Home Screen**
-- **Android (Chrome):** menu → **Install app** or **Add to Home screen**
-
 The phone copy works offline after the first load. It keeps its own local ledger. Turn on cloud sync in Settings if you want it to share data with the shop PC — only one device holds the lock at a time.
-
-If Pages is still publishing, download **MM3D-Inventory-Phone-*.zip** from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)** or the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab (`MM3D-Inventory-Phone` artifact). That zip is the same files the live URL serves; the URL is the easy way to test.
 
 ## Download for Windows
 
-Get the latest build from **[Releases](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest)**:
+These links start a file download. You do not need to expand **Assets** on the Releases page:
 
-- **MM3D-Inventory-Setup-*.exe** — installer (recommended; auto-updates from GitHub Releases on every push)
-- **MM3D-Inventory-Portable-*.exe** — no install; double-click to run (does not auto-update)
+- **[MM3D-Inventory-Setup.exe](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe)** — installer (recommended; auto-updates)
+- **[MM3D-Inventory-Portable.exe](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe)** — no install; double-click to run (does not auto-update)
 
-If the release is still uploading, open the **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)** tab, pick the latest **Build MM3D Inventory** run, and download the `MM3D-Inventory-Windows` artifact.
+Same links are on **[download.html](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)**.
+
+If a link 404s, the newest build is still uploading. Open **[Actions](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/actions)**, pick the latest **Build MM3D Inventory** run, and download the `MM3D-Inventory-Windows` artifact.
 
 Windows SmartScreen may warn because the app is not code-signed yet. Choose **More info** → **Run anyway**.
 

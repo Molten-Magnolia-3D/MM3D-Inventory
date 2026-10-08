@@ -229,6 +229,13 @@ tr.clickable:hover { background: var(--bg-2); }
   border-radius: 10px;
   cursor: pointer;
 }
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+a.btn:hover { color: #ffffff; }
+a.btn.secondary:hover { color: var(--ink); }
 .btn:hover { background: var(--copper-hot); }
 .btn.secondary {
   background: transparent;

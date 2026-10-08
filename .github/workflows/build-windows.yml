@@ -54,6 +54,16 @@ jobs:
           test -f release/latest.yml
           ls -la release/latest.yml release/MM3D-Inventory-Setup-*.exe
 
+      - name: Add stable download names
+        shell: bash
+        run: |
+          set -euo pipefail
+          setup=$(ls release/MM3D-Inventory-Setup-*.exe | head -n 1)
+          portable=$(ls release/MM3D-Inventory-Portable-*.exe | head -n 1)
+          cp "$setup" release/MM3D-Inventory-Setup.exe
+          cp "$portable" release/MM3D-Inventory-Portable.exe
+          ls -la release/*.exe
+
       - name: Publish GitHub Release
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
@@ -66,14 +76,24 @@ jobs:
           files: |
             release/MM3D-Inventory-Setup-*.exe
             release/MM3D-Inventory-Portable-*.exe
+            release/MM3D-Inventory-Setup.exe
+            release/MM3D-Inventory-Portable.exe
             release/latest.yml
           body: |
             Builds of **MM3D Inventory** (every push publishes a new version).
 
             ### Phone
-            **Download:** [Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest) — `MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip`
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** — that URL *is* the phone app. Then Add to Home Screen / Install app. Camera scanning works there.
 
-            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** after GitHub Pages is enabled (Settings → Pages → Deploy from branch `gh-pages`). Then Add to Home Screen / Install app. Camera scanning works on the phone copy.
+            Direct files (these start a download; you do not need to expand Assets):
+            - [Open on a phone](https://molten-magnolia-3d.github.io/MM3D-Inventory/)
+            - [Download page](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)
+            - [Windows Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe)
+            - [Windows Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe)
+            - [Always-latest Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe)
+            - [Always-latest Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe)
+
+            A phone zip is only a backup of those website files. It will not install on iPhone or Android.
 
             ### Windows
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
@@ -111,7 +131,8 @@ jobs:
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
           zip -r "MM3D-Inventory-Phone-${VERSION}.zip" dist
-          ls -la MM3D-Inventory-Phone-*.zip dist
+          cp "MM3D-Inventory-Phone-${VERSION}.zip" MM3D-Inventory-Phone.zip
+          ls -la MM3D-Inventory-Phone*.zip dist
 
       - name: Upload phone zip
         uses: actions/upload-artifact@v4
@@ -131,13 +152,22 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             MM3D-Inventory-Phone-*.zip
+            MM3D-Inventory-Phone.zip
           body: |
             Builds of **MM3D Inventory** (every push publishes a new version).
 
             ### Phone
-            **Download:** [Latest release](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest) — `MM3D-Inventory-Phone-${{ steps.ver.outputs.version }}.zip`
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** — that URL *is* the phone app. Then Add to Home Screen / Install app. Camera scanning works there.
 
-            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** after GitHub Pages is enabled (Settings → Pages → Deploy from branch `gh-pages`). Then Add to Home Screen / Install app. Camera scanning works on the phone copy.
+            Direct files (these start a download; you do not need to expand Assets):
+            - [Open on a phone](https://molten-magnolia-3d.github.io/MM3D-Inventory/)
+            - [Download page](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)
+            - [Windows Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe)
+            - [Windows Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe)
+            - [Always-latest Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe)
+            - [Always-latest Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe)
+
+            A phone zip is only a backup of those website files. It will not install on iPhone or Android.
 
             ### Windows
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)

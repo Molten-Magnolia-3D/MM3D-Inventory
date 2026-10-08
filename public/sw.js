@@ -11,6 +11,7 @@ const PRECACHE = [
   "./sql-wasm-browser.wasm",
   "./sql-wasm.wasm",
   "./sql-wasm-browser.js",
+  "./download.html",
 ];
 
 self.addEventListener("install", (event) => {
