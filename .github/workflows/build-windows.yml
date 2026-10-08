@@ -1,0 +1,189 @@
+name: Build MM3D Inventory
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and test
+        run: |
+          npm ci
+          npm test
+
+      - name: Stamp unique release version
+        id: ver
+        shell: bash
+        run: node scripts/stamp-release-version.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Build Windows installer and portable app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:win
+
+      - name: Upload downloadable files
+        uses: actions/upload-artifact@v4
+        with:
+          name: MM3D-Inventory-Windows
+          path: |
+            release/MM3D-Inventory-Setup-*.exe
+            release/MM3D-Inventory-Portable-*.exe
+            release/latest.yml
+            release/*.blockmap
+          if-no-files-found: error
+
+      - name: Confirm update metadata
+        shell: bash
+        run: |
+          ls -la release
+          test -f release/latest.yml
+          ls -la release/latest.yml release/MM3D-Inventory-Setup-*.exe
+
+      - name: Add stable download names
+        shell: bash
+        run: |
+          set -euo pipefail
+          setup=$(ls release/MM3D-Inventory-Setup-*.exe | head -n 1)
+          portable=$(ls release/MM3D-Inventory-Portable-*.exe | head -n 1)
+          cp "$setup" release/MM3D-Inventory-Setup.exe
+          cp "$portable" release/MM3D-Inventory-Portable.exe
+          ls -la release/*.exe
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: MM3D Inventory ${{ steps.ver.outputs.version }}
+          draft: false
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: |
+            release/MM3D-Inventory-Setup-*.exe
+            release/MM3D-Inventory-Portable-*.exe
+            release/MM3D-Inventory-Setup.exe
+            release/MM3D-Inventory-Portable.exe
+            release/latest.yml
+          body: |
+            Builds of **MM3D Inventory** (every push publishes a new version).
+
+            ### Phone
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** — that URL *is* the phone app. Then Add to Home Screen / Install app. Camera scanning works there.
+
+            Direct files (these start a download; you do not need to expand Assets):
+            - [Open on a phone](https://molten-magnolia-3d.github.io/MM3D-Inventory/)
+            - [Download page](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)
+            - [Windows Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe)
+            - [Windows Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe)
+            - [Always-latest Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe)
+            - [Always-latest Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe)
+
+            A phone zip is only a backup of those website files. It will not install on iPhone or Android.
+
+            ### Windows
+            - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
+            - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
+
+            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+
+            Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
+
+            Create your owner email/password on first launch. Optional: Settings → Load sample data.
+
+  phone:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install, test, and stamp version
+        id: ver
+        run: |
+          npm ci
+          npm test
+          node scripts/stamp-release-version.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Build phone / browser app
+        run: npm run build:web
+
+      - name: Zip phone web app
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          zip -r "MM3D-Inventory-Phone-${VERSION}.zip" dist
+          cp "MM3D-Inventory-Phone-${VERSION}.zip" MM3D-Inventory-Phone.zip
+          ls -la MM3D-Inventory-Phone*.zip dist
+
+      - name: Upload phone zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: MM3D-Inventory-Phone
+          path: MM3D-Inventory-Phone-*.zip
+          if-no-files-found: error
+
+      - name: Attach phone zip to GitHub Release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: MM3D Inventory ${{ steps.ver.outputs.version }}
+          draft: false
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: |
+            MM3D-Inventory-Phone-*.zip
+            MM3D-Inventory-Phone.zip
+          body: |
+            Builds of **MM3D Inventory** (every push publishes a new version).
+
+            ### Phone
+            Open **[the live phone app](https://molten-magnolia-3d.github.io/MM3D-Inventory/)** — that URL *is* the phone app. Then Add to Home Screen / Install app. Camera scanning works there.
+
+            Direct files (these start a download; you do not need to expand Assets):
+            - [Open on a phone](https://molten-magnolia-3d.github.io/MM3D-Inventory/)
+            - [Download page](https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html)
+            - [Windows Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe)
+            - [Windows Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/download/v${{ steps.ver.outputs.version }}/MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe)
+            - [Always-latest Setup](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe)
+            - [Always-latest Portable](https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe)
+
+            A phone zip is only a backup of those website files. It will not install on iPhone or Android.
+
+            ### Windows
+            - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
+            - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
+
+            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+
+            Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
+
+            Create your owner email/password on first launch. Optional: Settings → Load sample data.
+
+      - name: Push phone app to gh-pages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init
+          git checkout -b gh-pages
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "Publish phone web app"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
