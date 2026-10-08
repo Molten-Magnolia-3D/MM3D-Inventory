@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Download MM3D Inventory</title>
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Poppins:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color: #000;
+        background: #fff;
+        font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+        background: #fff;
+      }
+      main {
+        width: min(520px, 100%);
+        border: 1px solid #d9d9d9;
+        border-radius: 18px;
+        padding: 28px 24px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        font-family: Poppins, Manrope, sans-serif;
+        font-size: 28px;
+        margin: 0 0 8px;
+      }
+      p { color: #797979; line-height: 1.5; margin: 0 0 16px; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+      a.btn {
+        display: inline-block;
+        background: #000;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        padding: 12px 14px;
+        border-radius: 10px;
+        min-height: 44px;
+      }
+      a.btn.secondary {
+        background: transparent;
+        color: #000;
+        border: 1px solid #d9d9d9;
+      }
+      small { display: block; color: #797979; margin-top: 10px; line-height: 1.4; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Get MM3D Inventory</h1>
+      <p>
+        The phone copy is a website you open, not an App Store file. GitHub hides the Windows
+        installers under a collapsed <strong>Assets</strong> list — use these buttons instead.
+      </p>
+      <h2 style="font-size: 16px; margin: 0 0 8px;">Phone</h2>
+      <div class="row">
+        <a class="btn" href="./">Open the phone app</a>
+      </div>
+      <p>Then iPhone: Share → Add to Home Screen. Android Chrome: menu → Install app.</p>
+      <h2 style="font-size: 16px; margin: 0 0 8px;">Windows shop PC</h2>
+      <div class="row">
+        <a
+          class="btn"
+          href="https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Setup.exe"
+        >Download Windows Setup</a>
+        <a
+          class="btn secondary"
+          href="https://github.com/Molten-Magnolia-3D/MM3D-Inventory/releases/latest/download/MM3D-Inventory-Portable.exe"
+        >Portable EXE</a>
+      </div>
+      <small>
+        Setup auto-updates. Portable does not. Windows SmartScreen may say More info → Run anyway.
+        A zip of the phone website is only a backup — it will not install on iPhone or Android.
+      </small>
+    </main>
+  </body>
+</html>
