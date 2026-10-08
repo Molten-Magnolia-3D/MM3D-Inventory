@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DOWNLOAD_PAGE_PATH,
   DOWNLOAD_PAGE_URL,
   PHONE_APP_URL,
   latestReleaseAssetUrl,
@@ -15,6 +16,7 @@ import {
 describe("download URLs", () => {
   it("points the phone app at the GitHub Pages URL, not a zip installer", () => {
     expect(PHONE_APP_URL).toBe("https://molten-magnolia-3d.github.io/MM3D-Inventory/");
+    expect(DOWNLOAD_PAGE_PATH).toBe("./download.html");
     expect(DOWNLOAD_PAGE_URL).toBe("https://molten-magnolia-3d.github.io/MM3D-Inventory/download.html");
   });
 

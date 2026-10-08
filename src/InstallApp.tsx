@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { version as appVersion } from "../package.json";
 import {
-  DOWNLOAD_PAGE_URL,
+  DOWNLOAD_PAGE_PATH,
   PHONE_APP_URL,
   windowsPortableUrl,
   windowsSetupUrl,
@@ -34,7 +34,7 @@ export function WindowsDownloadLinks() {
       <p className="empty" style={{ paddingTop: 8 }}>
         Setup auto-updates. Portable does not. Phone testers should open{" "}
         <a href={PHONE_APP_URL}>{PHONE_APP_URL}</a> and Add to Home Screen — there is no iPhone or
-        Android installer. File links also live on <a href={DOWNLOAD_PAGE_URL}>download.html</a>.
+        Android installer. File links also live on <a href={DOWNLOAD_PAGE_PATH}>download.html</a>.
       </p>
     </div>
   );
@@ -107,7 +107,7 @@ export function InstallAppCard({ compact = false }: { compact?: boolean }) {
         (compact ? (
           <p className="lede" style={{ margin: "12px 0 0" }}>
             Need the Windows shop app?{" "}
-            <a href={DOWNLOAD_PAGE_URL}>Download Setup from this page</a>.
+            <a href={DOWNLOAD_PAGE_PATH}>Download Setup from this page</a>.
           </p>
         ) : (
           <WindowsDownloadLinks />
