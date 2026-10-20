@@ -70,6 +70,15 @@ function registerRendererProtocol() {
   });
 }
 
+function windowIcon(): string | undefined {
+  const candidates = [
+    path.join(process.cwd(), "build", "icon.ico"),
+    path.join(__dirname, "..", "build", "icon.ico"),
+    path.join(process.resourcesPath, "icon.ico"),
+  ];
+  return candidates.find((file) => fs.existsSync(file));
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
@@ -78,6 +87,7 @@ function createWindow() {
     minHeight: 720,
     backgroundColor: "#ffffff",
     title: "MM3D Inventory",
+    icon: windowIcon(),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

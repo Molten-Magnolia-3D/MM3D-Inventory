@@ -1,88 +1,59 @@
-import struct
-import zlib
+"""Build Windows and PWA icons from build/icon-source.png (option A)."""
+
+from __future__ import annotations
+
+import sys
 from pathlib import Path
 
+try:
+    from PIL import Image
+except ImportError as err:
+    raise SystemExit("Pillow is required: python3 -m pip install pillow") from err
 
-def write_png(width: int, height: int, rgba: bytes) -> bytes:
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        crc = zlib.crc32(tag + data) & 0xFFFFFFFF
-        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
-
-    raw = b"".join(b"\x00" + rgba[y * width * 4 : (y + 1) * width * 4] for y in range(height))
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
-    )
-
-
-def px(r: int, g: int, b: int, a: int = 255) -> bytes:
-    return bytes((r, g, b, a))
-
-
-def draw_icon(size: int) -> bytes:
-    bg = px(22, 17, 14)
-    copper = px(213, 106, 44)
-    cream = px(244, 235, 224)
-    pixels = bytearray(bg * size * size)
-
-    def setp(x: int, y: int, color: bytes) -> None:
-        if 0 <= x < size and 0 <= y < size:
-            i = (y * size + x) * 4
-            pixels[i : i + 4] = color
-
-    margin = size // 8
-    radius = size // 6
-    for y in range(margin, size - margin):
-        for x in range(margin, size - margin):
-            dx = min(x - margin, size - margin - 1 - x)
-            dy = min(y - margin, size - margin - 1 - y)
-            if dx < 0 or dy < 0:
-                continue
-            if (dx < radius and dy < radius) and ((radius - dx) ** 2 + (radius - dy) ** 2 > radius * radius):
-                continue
-            setp(x, y, copper)
-
-    # Block letter M
-    left = size * 28 // 100
-    right = size * 72 // 100
-    top = size * 30 // 100
-    bottom = size * 72 // 100
-    thick = max(3, size // 10)
-    mid = (left + right) // 2
-    peak = top + (bottom - top) // 3
-    for y in range(top, bottom):
-        for x in range(left, left + thick):
-            setp(x, y, cream)
-        for x in range(right - thick, right):
-            setp(x, y, cream)
-        t = (y - top) / max(1, peak - top)
-        if y <= peak:
-            x1 = int(left + (mid - left) * t)
-            x2 = int(right - (right - mid) * t)
-            for x in range(x1, min(x1 + thick, size)):
-                setp(x, y, cream)
-            for x in range(max(0, x2 - thick), x2):
-                setp(x, y, cream)
-    return bytes(pixels)
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "build" / "icon-source.png"
+BUILD = ROOT / "build"
+PUBLIC = ROOT / "public"
+ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
+PNG_TARGETS = {
+    BUILD / "icon.png": 256,
+    BUILD / "icon-32.png": 32,
+    PUBLIC / "icon-192.png": 192,
+    PUBLIC / "icon-512.png": 512,
+    PUBLIC / "apple-touch-icon.png": 180,
+}
 
 
-def png_to_ico(png: bytes) -> bytes:
-    header = struct.pack("<HHH", 0, 1, 1)
-    entry = struct.pack("<BBBBHHII", 0, 0, 0, 0, 1, 32, len(png), 6 + 16)
-    return header + entry + png
+def square(image: Image.Image, size: int) -> Image.Image:
+    return image.convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
 
 
 def main() -> None:
-    out = Path("build")
-    out.mkdir(exist_ok=True)
-    png256 = write_png(256, 256, draw_icon(256))
-    png32 = write_png(32, 32, draw_icon(32))
-    (out / "icon.png").write_bytes(png256)
-    (out / "icon.ico").write_bytes(png_to_ico(png256))
-    (out / "icon-32.png").write_bytes(png32)
-    print("wrote build/icon.ico")
+    src_path = Path(sys.argv[1]) if len(sys.argv) > 1 else SOURCE
+    if not src_path.exists():
+        raise SystemExit(f"missing icon source: {src_path}")
+
+    source = Image.open(src_path).convert("RGBA")
+    BUILD.mkdir(exist_ok=True)
+    PUBLIC.mkdir(exist_ok=True)
+    SOURCE.parent.mkdir(exist_ok=True)
+    if src_path.resolve() != SOURCE.resolve():
+        square(source, 512).save(SOURCE, format="PNG")
+        source = Image.open(SOURCE).convert("RGBA")
+
+    for dest, size in PNG_TARGETS.items():
+        square(source, size).save(dest, format="PNG")
+
+    ico_images = [square(source, size) for size in ICO_SIZES]
+    ico_images[-1].save(
+        BUILD / "icon.ico",
+        format="ICO",
+        sizes=[(size, size) for size in ICO_SIZES],
+        append_images=ico_images[:-1],
+    )
+    print("wrote", BUILD / "icon.ico")
+    for dest in PNG_TARGETS:
+        print("wrote", dest)
 
 
 if __name__ == "__main__":
