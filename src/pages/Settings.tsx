@@ -72,8 +72,8 @@ export default function SettingsPage() {
         <h2>App updates</h2>
         <p className="empty" style={{ paddingTop: 0 }}>
           {platform.isElectron
-            ? "The installed Setup app checks GitHub after launch and every 15 minutes. Each push to the repo publishes a newer version, which downloads in the background. Portable EXEs do not auto-update — install with Setup if you want that."
-            : "This phone/browser copy loads the latest GitHub Pages build the next time you open it. The Windows Setup app on the shop PC still auto-updates from GitHub Releases."}
+            ? "The installed Setup app checks GitHub after launch, every 5 minutes, and when you come back to the window. Each push publishes a newer version, which downloads in the background. Restart when it is ready, or just quit — it also installs on close. Portable EXEs do not auto-update — install with Setup on the shop PC."
+            : "This phone copy checks GitHub Pages after launch and every 5 minutes. Each push publishes a new build. It reloads on open if a newer version is already out, or when you leave the app and come back. You can also tap Update now."}
         </p>
         {update && <p>{update.message || `This copy is v${update.version}.`}</p>}
         {update?.state === "downloading" && (
@@ -81,26 +81,24 @@ export default function SettingsPage() {
             <span style={{ width: `${update.percent ?? 0}%` }} />
           </div>
         )}
-        {platform.isElectron && (
-          <div className="row">
-            <button
-              className="btn secondary"
-              type="button"
-              disabled={checking || update?.state === "checking" || update?.state === "downloading"}
-              onClick={() => {
-                setChecking(true);
-                void platform.checkForUpdates().finally(() => setChecking(false));
-              }}
-            >
-              {checking || update?.state === "checking" ? "Checking…" : "Check for updates"}
+        <div className="row">
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={checking || update?.state === "checking" || update?.state === "downloading"}
+            onClick={() => {
+              setChecking(true);
+              void platform.checkForUpdates().finally(() => setChecking(false));
+            }}
+          >
+            {checking || update?.state === "checking" ? "Checking…" : "Check for updates"}
+          </button>
+          {update?.state === "ready" && (
+            <button className="btn" type="button" onClick={() => void platform.installUpdate()}>
+              Update now
             </button>
-            {update?.state === "ready" && (
-              <button className="btn" type="button" onClick={() => void platform.installUpdate()}>
-                Restart to update
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

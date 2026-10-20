@@ -1,6 +1,33 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { version } from "./package.json";
+
+function emitVersionJson(): Plugin {
+  const payload = `${JSON.stringify({ version }, null, 2)}\n`;
+  function serveVersion(req: { url?: string }, res: { setHeader: (k: string, v: string) => void; end: (body: string) => void }, next: () => void) {
+    const pathname = req.url?.split("?")[0];
+    if (pathname !== "/version.json") {
+      next();
+      return;
+    }
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
+    res.end(payload);
+  }
+  return {
+    name: "mm3d-version-json",
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "version.json", source: payload });
+    },
+    configureServer(server) {
+      server.middlewares.use(serveVersion);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(serveVersion);
+    },
+  };
+}
 
 function sqlJsDefaultExport(): Plugin {
   return {
@@ -18,7 +45,7 @@ function sqlJsDefaultExport(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [sqlJsDefaultExport(), react()],
+  plugins: [sqlJsDefaultExport(), emitVersionJson(), react()],
   base: "./",
   resolve: {
     alias: {

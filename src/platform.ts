@@ -1,7 +1,7 @@
-import { version as appVersion } from "../package.json";
 import type { DeviceInfo } from "./core/types";
 import { asUint8Array, sqlAssetUrl } from "./core/util";
-import { unavailableUpdate, type UpdateStatus } from "./core/update";
+import type { UpdateStatus } from "./core/update";
+import { getWebUpdater } from "./webUpdate";
 
 export interface Platform {
   isElectron: boolean;
@@ -140,6 +140,8 @@ export function createPlatform(): Platform {
     };
   }
 
+  const updater = getWebUpdater();
+  updater.start();
   return {
     isElectron: false,
     async loadDb() {
@@ -177,17 +179,9 @@ export function createPlatform(): Platform {
       });
     },
     locateWasm: (file) => sqlAssetUrl(file),
-    async getUpdateStatus() {
-      return unavailableUpdate(appVersion, "Phone and browser copies pick up a new build the next time you open the page.");
-    },
-    async checkForUpdates() {
-      return unavailableUpdate(appVersion, "Phone and browser copies pick up a new build the next time you open the page.");
-    },
-    async installUpdate() {
-      return false;
-    },
-    onUpdate() {
-      return () => undefined;
-    },
+    getUpdateStatus: async () => updater.getStatus(),
+    checkForUpdates: () => updater.check(true),
+    installUpdate: () => updater.install(),
+    onUpdate: (cb) => updater.subscribe(cb),
   };
 }

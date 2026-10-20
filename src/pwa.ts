@@ -15,5 +15,7 @@ export function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator)) return;
   const url = new URL("./sw.js", window.location.href);
   url.searchParams.set("v", version);
-  void navigator.serviceWorker.register(url.toString());
+  void navigator.serviceWorker.register(url.toString(), { updateViaCache: "none" }).then((registration) => {
+    void registration.update().catch(() => undefined);
+  });
 }

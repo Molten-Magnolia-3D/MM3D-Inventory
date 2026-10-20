@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { InstallAppCard } from "../InstallApp";
 import { useInventory } from "../state";
 import { Field } from "../ui";
+import { UpdateBanner } from "../UpdateBanner";
 
 export default function LoginPage() {
   const { inv, refresh, cloudLogin, platform } = useInventory();
@@ -49,6 +50,7 @@ export default function LoginPage() {
             ? `One email and password for this shop. Data lives on this ${platform.isElectron ? "PC" : "device"} and can sync to your cloud project when you add Firebase in Settings.`
             : `Works offline. Syncs when this ${platform.isElectron ? "PC" : "device"} is back online.`}
         </p>
+        <UpdateBanner />
         {error && <div className="danger-banner">{error}</div>}
         <Field label="Email">
           <input

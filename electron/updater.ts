@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, powerMonitor } from "electron";
 import electronUpdater from "electron-updater";
 import { isPortableEnv } from "./portable.js";
 
@@ -34,6 +34,9 @@ let status: UpdateStatus = {
 };
 let userInitiated = false;
 let inFlight = false;
+let lastCheckAt = 0;
+const CHECK_MS = 5 * 60 * 1000;
+const MIN_GAP_MS = 60 * 1000;
 
 function broadcast() {
   const payload = { ...status };
@@ -51,7 +54,9 @@ async function checkNow(fromUser = false) {
   userInitiated = fromUser;
   if (!app.isPackaged || isPortableEnv()) return status;
   if (inFlight && !fromUser) return status;
+  if (!fromUser && lastCheckAt && Date.now() - lastCheckAt < MIN_GAP_MS) return status;
   inFlight = true;
+  lastCheckAt = Date.now();
   try {
     await autoUpdater.checkForUpdates();
   } catch (err) {
@@ -158,7 +163,6 @@ export function setupUpdater(): void {
   });
   autoUpdater.on("error", (err) => applyError(err));
 
-  const CHECK_MS = 15 * 60 * 1000;
   setTimeout(() => {
     void checkNow(false);
   }, 6_000);
@@ -166,4 +170,12 @@ export function setupUpdater(): void {
     if (status.state === "checking" || status.state === "downloading" || status.state === "ready") return;
     void checkNow(false);
   }, CHECK_MS);
+  app.on("browser-window-focus", () => {
+    if (status.state === "checking" || status.state === "downloading" || status.state === "ready") return;
+    void checkNow(false);
+  });
+  powerMonitor.on("resume", () => {
+    if (status.state === "checking" || status.state === "downloading" || status.state === "ready") return;
+    void checkNow(false);
+  });
 }

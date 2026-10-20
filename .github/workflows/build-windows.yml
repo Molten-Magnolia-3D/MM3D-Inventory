@@ -97,7 +97,9 @@ jobs:
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
             - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
 
-            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+            Installed Setup copies check GitHub Releases after launch, every 5 minutes, and when you come back to the window, then download in the background. Tap **Update now** or quit — it also installs on close.
+
+            Phone copies check the live site after launch and every 5 minutes, then reload on the next open (or when you leave the app and come back).
 
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 
@@ -170,7 +172,9 @@ jobs:
             - **MM3D-Inventory-Setup-${{ steps.ver.outputs.version }}.exe** — installer (recommended; auto-updates)
             - **MM3D-Inventory-Portable-${{ steps.ver.outputs.version }}.exe** — run without installing (no auto-update)
 
-            Installed Setup copies check GitHub Releases after launch and every 15 minutes, then download in the background. Restart when the app says an update is ready (or just quit — it installs on close).
+            Installed Setup copies check GitHub Releases after launch, every 5 minutes, and when you come back to the window, then download in the background. Tap **Update now** or quit — it also installs on close.
+
+            Phone copies check the live site after launch and every 5 minutes, then reload on the next open (or when you leave the app and come back).
 
             Windows SmartScreen may warn because this build is unsigned. Choose **More info** → **Run anyway**.
 

@@ -91,9 +91,11 @@ Then open `http://<this-pc-ip>:4173` in the phone browser.
 npm run build
 ```
 
-`electron-builder` writes NSIS and portable builds under `release/`. CI stamps a new version and publishes a GitHub Release on **every push**, so an installed Setup copy can auto-update. The same run also publishes the phone web app to GitHub Pages.
+`electron-builder` writes NSIS and portable builds under `release/`. CI stamps a new version and publishes a GitHub Release on **every push**, so an installed Setup copy auto-updates. The same run also publishes the phone web app to GitHub Pages.
 
-Installed Setup copies check for a newer GitHub Release after launch and every 15 minutes, download it in the background, and install when you restart (or when you quit). Settings → **Check for updates** does the same on demand. Portable EXEs skip this — use Setup on the shop PC.
+Installed Setup copies check GitHub Releases after launch, every 5 minutes, and when you come back to the window. They download in the background and install when you tap **Update now** or quit. Portable EXEs skip this — use Setup on the shop PC.
+
+Phone and browser copies check the live GitHub Pages `version.json` the same way: after launch, every 5 minutes, and when you return to the app. A newer build reloads on open, or when you leave and come back. Settings → **Check for updates** works on both.
 
 ## First-time shop setup
 

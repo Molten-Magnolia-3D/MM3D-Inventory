@@ -32,6 +32,7 @@ import ImportExportPage from "./pages/ImportExport";
 import SettingsPage from "./pages/Settings";
 import type { LookupHit } from "./core/types";
 import { useUpdateStatus } from "./useUpdateStatus";
+import { UpdateBanner } from "./UpdateBanner";
 
 const links = [
   { to: "/", label: "Shop floor", icon: LayoutDashboard, end: true },
@@ -235,22 +236,6 @@ function UpdateFoot() {
   return <div>v{status.version}</div>;
 }
 
-function UpdateBanner() {
-  const { platform } = useInventory();
-  const status = useUpdateStatus();
-  if (status?.state === "downloading") {
-    return <div className="warn-banner">{status.message}</div>;
-  }
-  if (status?.state !== "ready") return null;
-  return (
-    <div className="warn-banner row" style={{ alignItems: "center", gap: 12 }}>
-      <span>{status.message}</span>
-      <button type="button" className="btn" onClick={() => void platform.installUpdate()}>
-        Restart to update
-      </button>
-    </div>
-  );
-}
 
 function ScanBar() {
   const { inv, platform } = useInventory();
