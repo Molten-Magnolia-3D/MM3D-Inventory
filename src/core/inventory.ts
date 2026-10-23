@@ -7,7 +7,13 @@ import {
   estimatedCost,
   flattenBom,
 } from "./kits";
-import { DEFAULT_SETTINGS, SCHEMA_SQL } from "./schema";
+import {
+  DEFAULT_SETTINGS,
+  SCHEMA_SQL,
+  SQUARESPACE_IMPORT_BIN_BARCODE,
+  SQUARESPACE_IMPORT_BIN_NAME,
+  SQUARESPACE_IMPORT_PARENT_NAME,
+} from "./schema";
 import type {
   AppSettings,
   BinContents,
@@ -240,6 +246,15 @@ function mapItem(row: ItemRow): Item {
     archived: !!row.archived,
     updatedAt: row.updated_at,
   };
+}
+
+function uniqueConstraintError(err: unknown, sku: string, barcode: string | null): Error {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/UNIQUE.*items\.sku/i.test(message)) return new Error(`SKU ${sku} already exists.`);
+  if (/UNIQUE.*items\.barcode/i.test(message)) {
+    return new Error(`Barcode ${barcode ?? ""} already exists.`);
+  }
+  return err instanceof Error ? err : new Error(message);
 }
 
 function mapKit(row: KitRow): Kit {
@@ -705,23 +720,27 @@ export class Inventory {
     };
     if (!item.sku) throw new Error("SKU is required.");
     if (!item.name) throw new Error("Item name is required.");
-    this.db.run(
-      `INSERT INTO items(id, sku, name, variant, type, barcode, cost_usd, sell_price_usd, notes, archived, updated_at)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        item.id,
-        item.sku,
-        item.name,
-        item.variant,
-        item.type,
-        item.barcode,
-        item.costUsd,
-        item.sellPriceUsd,
-        item.notes,
-        0,
-        item.updatedAt,
-      ],
-    );
+    try {
+      this.db.run(
+        `INSERT INTO items(id, sku, name, variant, type, barcode, cost_usd, sell_price_usd, notes, archived, updated_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          item.id,
+          item.sku,
+          item.name,
+          item.variant,
+          item.type,
+          item.barcode,
+          item.costUsd,
+          item.sellPriceUsd,
+          item.notes,
+          0,
+          item.updatedAt,
+        ],
+      );
+    } catch (err) {
+      throw uniqueConstraintError(err, item.sku, item.barcode);
+    }
     this.markDirty();
     return item;
   }
@@ -787,9 +806,116 @@ export class Inventory {
         this.db.run("DELETE FROM items WHERE id = ?", [id]);
         deleted += 1;
       }
-      if (deleted) this.markDirty();
+      if (deleted) {
+        this.pruneEmptyImportLocations();
+        this.markDirty();
+      }
       return { deleted };
     });
+  }
+
+  addItemByBarcode(code: string): { item: Item; created: boolean } {
+    this.assertWritable();
+    const barcode = normalizeBarcode(code);
+    if (!barcode) throw new Error("Barcode is required.");
+    const hit = this.lookup(barcode);
+    if (hit.kind === "item") return { item: hit.item, created: false };
+    if (hit.kind === "bin") {
+      throw new Error(`Barcode ${barcode} is already a location.`);
+    }
+    if (hit.kind === "kit") {
+      throw new Error(`Barcode ${barcode} is already a kit.`);
+    }
+    if (hit.kind === "spool") {
+      throw new Error(`Barcode ${barcode} is already a spool.`);
+    }
+    const item = this.createItem({
+      sku: this.uniqueSku(barcode),
+      name: barcode,
+      type: "part",
+      barcode,
+    });
+    return { item, created: true };
+  }
+
+  addItemsFromBarcodes(codes: string[]): Item[] {
+    this.assertWritable();
+    const seen = new Set<string>();
+    const items: Item[] = [];
+    return this.db.transaction(() => {
+      for (const raw of codes) {
+        const barcode = normalizeBarcode(raw);
+        if (!barcode || seen.has(barcode)) continue;
+        seen.add(barcode);
+        items.push(this.addItemByBarcode(barcode).item);
+      }
+      if (items.length) this.markDirty();
+      return items;
+    });
+  }
+
+  deleteLocation(id: string): void {
+    this.assertWritable();
+    const loc = this.getLocation(id);
+    if (!loc) throw new Error("Location not found.");
+    if (this.locationHasChildren(id)) throw new Error("Remove child locations first.");
+    if (this.locationHasStock(id)) throw new Error("Location still has stock.");
+    if (this.locationHasSpools(id)) throw new Error("Location still has spools.");
+    this.db.run("UPDATE movements SET from_location_id = NULL WHERE from_location_id = ?", [id]);
+    this.db.run("UPDATE movements SET to_location_id = NULL WHERE to_location_id = ?", [id]);
+    this.db.run("UPDATE spools SET location_id = NULL WHERE location_id = ?", [id]);
+    this.db.run("DELETE FROM locations WHERE id = ?", [id]);
+    this.markDirty();
+  }
+
+  private uniqueSku(base: string): string {
+    const root = slugSku(base) || "ITEM";
+    if (!this.getItemBySku(root)) return root;
+    let n = 2;
+    while (this.getItemBySku(`${root}-${n}`)) n += 1;
+    return `${root}-${n}`;
+  }
+
+  private locationHasChildren(id: string): boolean {
+    return Boolean(this.db.get<{ id: string }>("SELECT id FROM locations WHERE parent_id = ? LIMIT 1", [id]));
+  }
+
+  private locationHasStock(id: string): boolean {
+    return Boolean(
+      this.db.get<{ item_id: string }>("SELECT item_id FROM stock WHERE location_id = ? LIMIT 1", [id]),
+    );
+  }
+
+  private locationHasSpools(id: string): boolean {
+    return Boolean(
+      this.db.get<{ id: string }>(
+        "SELECT id FROM spools WHERE location_id = ? AND archived = 0 LIMIT 1",
+        [id],
+      ),
+    );
+  }
+
+  private locationIdle(id: string): boolean {
+    return !this.locationHasChildren(id) && !this.locationHasStock(id) && !this.locationHasSpools(id);
+  }
+
+  private pruneEmptyImportLocations(): void {
+    const bins = this.listLocations(true).filter(
+      (loc) =>
+        loc.barcode === SQUARESPACE_IMPORT_BIN_BARCODE ||
+        (loc.name === SQUARESPACE_IMPORT_BIN_NAME &&
+          this.getLocation(loc.parentId ?? "")?.name === SQUARESPACE_IMPORT_PARENT_NAME),
+    );
+    for (const bin of bins) {
+      if (this.locationIdle(bin.id)) this.deleteLocation(bin.id);
+    }
+    for (const loc of this.listLocations(true)) {
+      if (loc.name !== SQUARESPACE_IMPORT_PARENT_NAME) continue;
+      if (loc.barcode) continue;
+      if (loc.type !== "area") continue;
+      if (!this.locationIdle(loc.id)) continue;
+      this.deleteLocation(loc.id);
+    }
   }
 
   private bumpStock(

@@ -1,7 +1,10 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Camera } from "lucide-react";
 import { useInventory } from "../state";
 import { Field, Modal, Money } from "../ui";
+import CameraScan from "../CameraScan";
+import { cameraScanAvailable, normalizeScannedCode } from "../scan";
 import type { Item, ItemType } from "../core/types";
 
 type Draft = {
@@ -13,6 +16,11 @@ type Draft = {
   costUsd: string;
   sellPriceUsd: string;
   notes: string;
+};
+
+type QueueEntry = {
+  code: string;
+  existing: boolean;
 };
 
 const emptyDraft = (): Draft => ({
@@ -40,14 +48,20 @@ function draftFromItem(item: Item): Draft {
 }
 
 export default function ItemsPage() {
-  const { inv, refresh } = useInventory();
+  const { inv, refresh, platform } = useInventory();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<ItemType | "">("");
+  const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [queue, setQueue] = useState<QueueEntry[]>([]);
+  const [scanCode, setScanCode] = useState("");
+  const [editQueue, setEditQueue] = useState<Item[]>([]);
+  const [editIndex, setEditIndex] = useState(0);
   const [bulk, setBulk] = useState({
     type: "" as ItemType | "",
     costUsd: "",
@@ -56,12 +70,23 @@ export default function ItemsPage() {
   });
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
-  const items = inv?.listItems({
-    query: query || undefined,
-    type: type || undefined,
-  }) ?? [];
+  const scanRef = useRef<HTMLInputElement>(null);
+  const showCamera = cameraScanAvailable(platform.isElectron);
+  const items =
+    inv?.listItems({
+      query: query || undefined,
+      type: type || undefined,
+    }) ?? [];
   const selectedIds = items.map((item) => item.id).filter((id) => selected[id]);
   const allVisibleSelected = items.length > 0 && selectedIds.length === items.length;
+  const queuedEdit = editQueue.length > 0;
+  const lastQueuedEdit = queuedEdit && editIndex >= editQueue.length - 1;
+
+  useEffect(() => {
+    if (!adding || cameraOpen) return;
+    scanRef.current?.focus();
+  }, [adding, cameraOpen, queue]);
+
   if (!inv) return null;
   const api = inv;
 
@@ -86,11 +111,78 @@ export default function ItemsPage() {
   }
 
   function closeModals() {
+    setAdding(false);
     setCreating(false);
     setEditing(null);
     setBulkOpen(false);
     setConfirmDelete(false);
+    setCameraOpen(false);
+    setQueue([]);
+    setScanCode("");
+    setEditQueue([]);
+    setEditIndex(0);
     setError(null);
+  }
+
+  function enqueueCode(raw: string) {
+    const code = normalizeScannedCode(raw);
+    if (!code) return;
+    setError(null);
+    if (queue.some((entry) => entry.code === code)) {
+      setError(`Already in the list: ${code}`);
+      setScanCode("");
+      return;
+    }
+    const hit = api.lookup(code);
+    if (hit.kind === "bin" || hit.kind === "kit" || hit.kind === "spool") {
+      setError(`Barcode ${code} is already a ${hit.kind}.`);
+      setScanCode("");
+      return;
+    }
+    setQueue((prev) => [...prev, { code, existing: hit.kind === "item" }]);
+    setScanCode("");
+  }
+
+  function removeQueued(code: string) {
+    setQueue((prev) => prev.filter((entry) => entry.code !== code));
+  }
+
+  function onScanSubmit(e: FormEvent) {
+    e.preventDefault();
+    enqueueCode(scanCode);
+  }
+
+  function finishQueue() {
+    setError(null);
+    try {
+      const created = api.addItemsFromBarcodes(queue.map((entry) => entry.code));
+      setAdding(false);
+      setQueue([]);
+      setScanCode("");
+      refresh();
+      if (!created.length) return;
+      setEditQueue(created);
+      setEditIndex(0);
+      setEditing(created[0]!);
+      setDraft(draftFromItem(created[0]!));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  function openNextEdit() {
+    const nextIndex = editIndex + 1;
+    if (nextIndex >= editQueue.length) {
+      closeModals();
+      refresh();
+      return;
+    }
+    const next = api.getItem(editQueue[nextIndex]!.id) ?? editQueue[nextIndex]!;
+    setEditIndex(nextIndex);
+    setEditing(next);
+    setDraft(draftFromItem(next));
+    setError(null);
+    refresh();
   }
 
   function saveNew(e: FormEvent) {
@@ -129,6 +221,10 @@ export default function ItemsPage() {
         sellPriceUsd: Number(draft.sellPriceUsd) || 0,
         notes: draft.notes || null,
       });
+      if (queuedEdit && !lastQueuedEdit) {
+        openNextEdit();
+        return;
+      }
       closeModals();
       refresh();
     } catch (err) {
@@ -169,14 +265,28 @@ export default function ItemsPage() {
 
   function openEdit(item: Item) {
     setError(null);
+    setAdding(false);
     setCreating(false);
     setBulkOpen(false);
+    setEditQueue([]);
+    setEditIndex(0);
     setEditing(item);
     setDraft(draftFromItem(item));
   }
 
+  function openAdd() {
+    setError(null);
+    setEditing(null);
+    setCreating(false);
+    setQueue([]);
+    setScanCode("");
+    setEditQueue([]);
+    setAdding(true);
+  }
+
   function openCreate() {
     setError(null);
+    setAdding(false);
     setEditing(null);
     setDraft(emptyDraft());
     setCreating(true);
@@ -198,10 +308,10 @@ export default function ItemsPage() {
       <div className="page-head">
         <div>
           <h1>Items</h1>
-          <p>Click a row to edit it here. Check one or many to delete or bulk-edit.</p>
+          <p>Scan barcodes to add several at once, then edit them in scan order. Click a row to edit it here.</p>
         </div>
-        <button className="btn" onClick={openCreate}>
-          New item
+        <button className="btn" onClick={openAdd}>
+          Add items
         </button>
       </div>
       <div className="row" style={{ marginBottom: 14 }}>
@@ -228,7 +338,7 @@ export default function ItemsPage() {
           </button>
         </div>
       )}
-      {error && !creating && !editing && !bulkOpen && <div className="danger-banner">{error}</div>}
+      {error && !adding && !creating && !editing && !bulkOpen && <div className="danger-banner">{error}</div>}
       <div className="card">
         <table>
           <thead>
@@ -263,8 +373,86 @@ export default function ItemsPage() {
             ))}
           </tbody>
         </table>
-        {items.length === 0 && <p className="empty">No items yet. Import a CSV or add one by hand.</p>}
+        {items.length === 0 && (
+          <p className="empty">No items yet. Scan barcodes to add them, or import a CSV.</p>
+        )}
       </div>
+      {adding && (
+        <Modal title="Add items" onClose={closeModals}>
+          {error && <div className="danger-banner">{error}</div>}
+          <p className="empty" style={{ paddingTop: 0 }}>
+            Scan or type a barcode and press Enter. Add as many as you need, then Done — you will edit them in the
+            order they were scanned.
+          </p>
+          <form onSubmit={onScanSubmit}>
+            <Field label="Barcode">
+              <div className="row">
+                <input
+                  ref={scanRef}
+                  value={scanCode}
+                  onChange={(e) => {
+                    setScanCode(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Scan or type, then Enter"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  enterKeyHint="done"
+                  inputMode="text"
+                  name="new-item-barcode"
+                />
+                {showCamera && (
+                  <button
+                    type="button"
+                    className="btn secondary cam-btn"
+                    onClick={() => setCameraOpen(true)}
+                    aria-label="Scan with camera"
+                  >
+                    <Camera size={18} />
+                    <span className="cam-btn-label">Camera</span>
+                  </button>
+                )}
+              </div>
+            </Field>
+            <button className="visually-hidden" type="submit">
+              Add barcode
+            </button>
+          </form>
+          {queue.length > 0 && (
+            <ol className="scan-queue">
+              {queue.map((entry, index) => (
+                <li key={`${entry.code}:${index}`}>
+                  <span>
+                    <strong>{index + 1}.</strong> {entry.code}
+                    {entry.existing && <span className="badge">already in inventory</span>}
+                  </span>
+                  <button className="btn ghost" type="button" onClick={() => removeQueued(entry.code)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+          <div className="row">
+            <button className="btn" type="button" disabled={!queue.length} onClick={finishQueue}>
+              Done{queue.length ? ` · ${queue.length}` : ""}
+            </button>
+            <button className="btn ghost" type="button" onClick={openCreate}>
+              Add without a barcode
+            </button>
+          </div>
+        </Modal>
+      )}
+      {cameraOpen && (
+        <CameraScan
+          onCode={(value) => {
+            setCameraOpen(false);
+            enqueueCode(value);
+          }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
       {creating && (
         <Modal title="New item" onClose={closeModals}>
           {error && <div className="danger-banner">{error}</div>}
@@ -277,17 +465,31 @@ export default function ItemsPage() {
         </Modal>
       )}
       {editing && (
-        <Modal title={`Edit ${editing.sku}`} onClose={closeModals}>
+        <Modal
+          title={
+            queuedEdit
+              ? `Edit ${editIndex + 1} of ${editQueue.length} · ${editing.sku}`
+              : `Edit ${editing.sku}`
+          }
+          onClose={closeModals}
+        >
           {error && <div className="danger-banner">{error}</div>}
           <form onSubmit={saveEdit}>
             <ItemFields draft={draft} setDraft={setDraft} />
             <div className="row">
               <button className="btn" type="submit">
-                Save changes
+                {queuedEdit && !lastQueuedEdit ? "Save & next" : "Save changes"}
               </button>
-              <Link className="btn secondary" to={`/items/${editing.id}`} onClick={closeModals}>
-                Open stock / movements
-              </Link>
+              {queuedEdit && !lastQueuedEdit && (
+                <button className="btn secondary" type="button" onClick={openNextEdit}>
+                  Skip
+                </button>
+              )}
+              {!queuedEdit && (
+                <Link className="btn secondary" to={`/items/${editing.id}`} onClick={closeModals}>
+                  Open stock / movements
+                </Link>
+              )}
             </div>
           </form>
         </Modal>

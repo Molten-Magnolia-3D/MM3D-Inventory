@@ -1,5 +1,10 @@
 import Papa from "papaparse";
 import type { Inventory } from "./inventory";
+import {
+  SQUARESPACE_IMPORT_BIN_BARCODE,
+  SQUARESPACE_IMPORT_BIN_NAME,
+  SQUARESPACE_IMPORT_PARENT_NAME,
+} from "./schema";
 import type { BomLine, ItemType, LocationArea, LocationType } from "./types";
 import { slugSku } from "./util";
 
@@ -272,19 +277,19 @@ function squarespaceToMm3d(rows: Row[]): Row[] {
   const out: Row[] = [
     row({
       section: "locations",
-      name: "Imported",
+      name: SQUARESPACE_IMPORT_PARENT_NAME,
       type: "area",
       area: "hardware",
-      path: "Imported",
+      path: SQUARESPACE_IMPORT_PARENT_NAME,
     }),
     row({
       section: "locations",
-      name: "Squarespace",
+      name: SQUARESPACE_IMPORT_BIN_NAME,
       type: "bin",
       area: "hardware",
-      parent_path: "Imported",
-      path: "Imported / Squarespace",
-      barcode: "BIN-IMPORT",
+      parent_path: SQUARESPACE_IMPORT_PARENT_NAME,
+      path: `${SQUARESPACE_IMPORT_PARENT_NAME} / ${SQUARESPACE_IMPORT_BIN_NAME}`,
+      barcode: SQUARESPACE_IMPORT_BIN_BARCODE,
     }),
   ];
   for (const data of inheritSquarespaceProductFields(rows)) {
@@ -316,8 +321,8 @@ function squarespaceToMm3d(rows: Row[]): Row[] {
             section: "stock",
             sku,
             qty,
-            location_path: "Imported / Squarespace",
-            location_barcode: "BIN-IMPORT",
+            location_path: `${SQUARESPACE_IMPORT_PARENT_NAME} / ${SQUARESPACE_IMPORT_BIN_NAME}`,
+            location_barcode: SQUARESPACE_IMPORT_BIN_BARCODE,
           }),
         );
       }

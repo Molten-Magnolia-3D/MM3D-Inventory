@@ -161,4 +161,27 @@ describe("inventory v1", () => {
     expect(inv.getItemBySku("DEC-231")).toBeTruthy();
     expect(inv.kitBom(inv.listKits().find((k) => k.sku === "KIT-HARRIER-231")!.id).some((line) => line.componentItemId === body.id)).toBe(false);
   });
+
+  it("adds scanned barcodes in order and reuses an existing item", async () => {
+    const inv = await freshInventory();
+    const existing = inv.createItem({
+      sku: "OLD-SKU",
+      name: "Existing part",
+      type: "part",
+      barcode: "SCAN-OLD",
+    });
+    const created = inv.addItemsFromBarcodes(["  SCAN-NEW  ", "SCAN-OLD", "SCAN-NEW", "SCAN-THIRD"]);
+    expect(created.map((item) => item.barcode)).toEqual(["SCAN-NEW", "SCAN-OLD", "SCAN-THIRD"]);
+    expect(created[0]?.sku).toBe("SCAN-NEW");
+    expect(created[0]?.name).toBe("SCAN-NEW");
+    expect(created[1]?.id).toBe(existing.id);
+    expect(inv.listItems()).toHaveLength(3);
+  });
+
+  it("does not turn a location barcode into an item", async () => {
+    const inv = await freshInventory();
+    inv.createLocation({ name: "A1", type: "bin", area: "hardware", barcode: "BIN-A1" });
+    expect(() => inv.addItemByBarcode("BIN-A1")).toThrow(/already a location/i);
+    expect(inv.listItems()).toEqual([]);
+  });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { importCsv, TEMPLATE_CSV } from "./csv";
+import { SQUARESPACE_IMPORT_BIN_BARCODE, SQUARESPACE_IMPORT_PARENT_NAME } from "./schema";
 import { freshInventory } from "../test/helpers";
 
 const SQUARESPACE_CSV = `\uFEFFProduct Type,Title,Description,SKU,Option Name 1,Option Value 1,Price,Sale Price,On Sale,Stock,Categories
@@ -37,7 +38,30 @@ describe("csv import", () => {
     expect(inv.totalQty(kit.id)).toBe(5);
     expect(inv.getItemBySku("KIT-H-542")?.sellPriceUsd).toBe(48);
     expect(inv.totalQty(inv.getItemBySku("KIT-H-542")!.id)).toBe(0);
-    expect(inv.listLocations().some((l) => l.barcode === "BIN-IMPORT")).toBe(true);
+    expect(inv.listLocations().some((l) => l.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(true);
+  });
+
+  it("drops the Squarespace import bin after its items are deleted", async () => {
+    const inv = await freshInventory();
+    const result = importCsv(inv, SQUARESPACE_CSV);
+    expect(result.errors).toEqual([]);
+    expect(inv.labelCandidates().some((row) => row.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(true);
+    inv.deleteItems(inv.listItems().map((item) => item.id));
+    expect(inv.listItems()).toEqual([]);
+    expect(inv.listLocations().some((loc) => loc.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(false);
+    expect(inv.listLocations().some((loc) => loc.name === SQUARESPACE_IMPORT_PARENT_NAME)).toBe(false);
+    expect(inv.labelCandidates().some((row) => row.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(false);
+  });
+
+  it("keeps the Squarespace bin while imported stock remains", async () => {
+    const inv = await freshInventory();
+    importCsv(inv, SQUARESPACE_CSV);
+    const unlimited = inv.getItemBySku("KIT-H-542")!;
+    inv.deleteItems([unlimited.id]);
+    expect(inv.listLocations().some((loc) => loc.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(true);
+    const withStock = inv.getItemBySku("KIT-H-231")!;
+    inv.deleteItems([withStock.id]);
+    expect(inv.listLocations().some((loc) => loc.barcode === SQUARESPACE_IMPORT_BIN_BARCODE)).toBe(false);
   });
 
   it("keeps the product title and puts Squarespace options in variant", async () => {

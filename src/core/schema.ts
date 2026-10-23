@@ -144,6 +144,11 @@ CREATE INDEX IF NOT EXISTS idx_movements_created ON movements(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_spool_usage_spool ON spool_usage(spool_id);
 `;
 
+/** Location created by a Squarespace product CSV so imported stock has a bin. */
+export const SQUARESPACE_IMPORT_PARENT_NAME = "Imported";
+export const SQUARESPACE_IMPORT_BIN_NAME = "Squarespace";
+export const SQUARESPACE_IMPORT_BIN_BARCODE = "BIN-IMPORT";
+
 export const DEFAULT_SETTINGS = {
   filamentLowGrams: 300,
   filamentCriticalGrams: 100,

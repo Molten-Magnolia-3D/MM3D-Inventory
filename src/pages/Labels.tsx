@@ -12,7 +12,18 @@ export default function LabelsPage() {
     () => rows.filter((r) => selected[`${r.kind}:${r.id}`]),
     [rows, selected],
   );
+  const allVisibleSelected = rows.length > 0 && picked.length === rows.length;
   if (!inv) return null;
+
+  function toggleAll(on: boolean) {
+    if (!on) {
+      setSelected({});
+      return;
+    }
+    const next: Record<string, boolean> = {};
+    for (const row of rows) next[`${row.kind}:${row.id}`] = true;
+    setSelected(next);
+  }
 
   async function exportPdf() {
     setBusy(true);
@@ -36,16 +47,34 @@ export default function LabelsPage() {
           <h1>Labels</h1>
           <p>Letter sheet, 30-up. Code 128 for USB scanners, plus a QR with the same value.</p>
         </div>
-        <button className="btn" disabled={!picked.length || busy} onClick={() => void exportPdf()}>
-          Export {picked.length} label{picked.length === 1 ? "" : "s"} to PDF
-        </button>
+        <div className="row">
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={!rows.length}
+            onClick={() => toggleAll(!allVisibleSelected)}
+          >
+            {allVisibleSelected ? "Clear selection" : "Select all"}
+          </button>
+          <button className="btn" disabled={!picked.length || busy} onClick={() => void exportPdf()}>
+            Export {picked.length} label{picked.length === 1 ? "" : "s"} to PDF
+          </button>
+        </div>
       </div>
       {error && <div className="danger-banner">{error}</div>}
       <div className="card">
         <table>
           <thead>
             <tr>
-              <th></th>
+              <th style={{ width: 36 }}>
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  disabled={!rows.length}
+                  onChange={(e) => toggleAll(e.target.checked)}
+                  aria-label="Select all labels"
+                />
+              </th>
               <th>Kind</th>
               <th>Title</th>
               <th>Barcode</th>
@@ -61,6 +90,7 @@ export default function LabelsPage() {
                       type="checkbox"
                       checked={!!selected[key]}
                       onChange={(e) => setSelected({ ...selected, [key]: e.target.checked })}
+                      aria-label={`Select ${row.title}`}
                     />
                   </td>
                   <td>{row.kind}</td>
