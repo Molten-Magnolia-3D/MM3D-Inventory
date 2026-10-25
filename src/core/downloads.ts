@@ -1,4 +1,4 @@
-export const GITHUB_REPO = "Molten-Magnolia-3D/MM3D-Inventory";
+const GITHUB_REPO = "Molten-Magnolia-3D/MM3D-Inventory";
 export const PHONE_APP_URL = "https://molten-magnolia-3d.github.io/MM3D-Inventory/";
 export const DOWNLOAD_PAGE_PATH = "./download.html";
 export const DOWNLOAD_PAGE_URL = `${PHONE_APP_URL}download.html`;

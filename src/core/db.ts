@@ -1,6 +1,6 @@
 import type { Database, SqlValue } from "sql.js";
 
-export type BindValue = SqlValue;
+type BindValue = SqlValue;
 
 export class Db {
   constructor(public sql: Database) {}

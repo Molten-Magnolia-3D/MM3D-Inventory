@@ -37,7 +37,7 @@ export function flattenBom(
   return mergeLeaves(leaves);
 }
 
-export function mergeLeaves(leaves: LeafRequirement[]): LeafRequirement[] {
+function mergeLeaves(leaves: LeafRequirement[]): LeafRequirement[] {
   const map = new Map<string, LeafRequirement>();
   for (const leaf of leaves) {
     const key = `${leaf.itemId ?? ""}|${leaf.filamentMaterial ?? ""}|${leaf.filamentGrams > 0 ? "fil" : "qty"}`;

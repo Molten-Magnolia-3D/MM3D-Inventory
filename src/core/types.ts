@@ -239,21 +239,4 @@ export interface Snapshot {
   sqliteBase64: string;
 }
 
-export const ITEM_TYPES: ItemType[] = ["part", "product", "consumable", "filament"];
-export const LOCATION_TYPES: LocationType[] = [
-  "building",
-  "room",
-  "shelf",
-  "bin",
-  "tote",
-  "area",
-];
-export const MOVEMENT_TYPES: MovementType[] = [
-  "receive",
-  "adjust",
-  "move",
-  "use",
-  "scrap",
-  "sale",
-];
 export const BASE_MATERIALS = ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC"];

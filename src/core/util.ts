@@ -36,15 +36,6 @@ export function itemLabel(item: { name: string; variant?: string | null }): stri
   return item.variant ? `${item.name} · ${item.variant}` : item.name;
 }
 
-export function formatUsd(n: number): string {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
-}
-
-export function formatQty(n: number): string {
-  if (Number.isInteger(n)) return String(n);
-  return String(Math.round(n * 1000) / 1000);
-}
-
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;

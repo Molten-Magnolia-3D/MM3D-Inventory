@@ -6,7 +6,7 @@ import {
   type UpdateStatus,
 } from "./core/update";
 
-export const WEB_UPDATE_CHECK_MS = 5 * 60 * 1000;
+const WEB_UPDATE_CHECK_MS = 5 * 60 * 1000;
 const RELOAD_KEY = "mm3d-update-reload";
 
 export interface WebUpdater {

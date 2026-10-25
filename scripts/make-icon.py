@@ -1,4 +1,4 @@
-"""Build Windows and PWA icons from build/icon-source.png (option A)."""
+"""Build Windows and PWA icons from build/icon-source.png."""
 
 from __future__ import annotations
 

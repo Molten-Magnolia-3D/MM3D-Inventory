@@ -178,7 +178,7 @@ export class FirebaseCloud implements CloudBackend {
   }
 }
 
-export function snapshotFromInventory(inv: Inventory): Snapshot {
+function snapshotFromInventory(inv: Inventory): Snapshot {
   return {
     rev: inv.getSettings().rev,
     updatedAt: nowIso(),

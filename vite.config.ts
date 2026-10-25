@@ -1,6 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "node:path";
 import { version } from "./package.json";
 
 function emitVersionJson(): Plugin {
@@ -47,11 +46,6 @@ function sqlJsDefaultExport(): Plugin {
 export default defineConfig({
   plugins: [sqlJsDefaultExport(), emitVersionJson(), react()],
   base: "./",
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
-  },
   optimizeDeps: {
     exclude: ["sql.js"],
   },

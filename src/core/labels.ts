@@ -71,10 +71,3 @@ export async function buildLabelPdf(labels: LabelSpec[]): Promise<Uint8Array> {
   const output = doc.output("arraybuffer");
   return new Uint8Array(output);
 }
-
-export function buildLabelPdfNodeSafe(labels: LabelSpec[]): string {
-  const lines = labels.map(
-    (l) => `${l.barcode}\t${l.title}\t${l.subtitle ?? ""}`,
-  );
-  return lines.join("\n");
-}

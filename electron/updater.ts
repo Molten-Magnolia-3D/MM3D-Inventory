@@ -4,8 +4,6 @@ import { isPortableEnv } from "./portable.js";
 
 const { autoUpdater } = electronUpdater;
 
-export { isPortableEnv };
-
 export type UpdateState =
   | "idle"
   | "checking"

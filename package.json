@@ -46,7 +46,6 @@
     "concurrently": "^9.1.2",
     "electron": "^35.2.1",
     "electron-builder": "^26.0.12",
-    "jsdom": "^26.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.1.4",
@@ -62,14 +61,7 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "templates/**/*",
       "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "templates",
-        "to": "templates"
-      }
     ],
     "publish": {
       "provider": "github",

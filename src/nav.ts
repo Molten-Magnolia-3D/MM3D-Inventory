@@ -1,4 +1,4 @@
-export const PRIMARY_NAV_HREFS = ["/", "/scan", "/items", "/kits"] as const;
+const PRIMARY_NAV_HREFS = ["/", "/scan", "/items", "/kits"] as const;
 
 export function navPathname(path: string): string {
   const trimmed = path.trim() || "/";

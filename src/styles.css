@@ -3,16 +3,11 @@
   --bg-2: #f5f5f5;
   --rail: #000000;
   --panel: #ffffff;
-  --panel-2: #f5f5f5;
   --line: #d9d9d9;
-  --accent: #d9d9d9;
   --copper: #000000;
   --copper-hot: #333333;
-  --magnolia: #f5f5f5;
-  --cream: #ffffff;
   --ink: #000000;
   --muted: #797979;
-  --pine: #4a4a4a;
   --gold: #4a4a4a;
   --danger: #222222;
   --shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
@@ -195,7 +190,7 @@ nav a.active, nav a:hover {
   gap: 12px;
   margin-bottom: 18px;
 }
-.stat, .card, .panel {
+.stat, .card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -205,7 +200,6 @@ nav a.active, nav a:hover {
 .stat span { color: var(--muted); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
 .stat strong { display: block; font-size: 28px; margin-top: 6px; font-family: Poppins, Manrope, sans-serif; }
 .card { padding: 16px 18px; }
-.panel { padding: 18px; }
 
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .row > input {
@@ -320,9 +314,6 @@ input[type="checkbox"] {
   color: var(--ink);
   background: var(--bg-2);
 }
-.badge.hardware { background: var(--bg-2); }
-.badge.filament { background: #ececec; }
-.badge.warn { background: var(--bg-2); color: var(--gold); }
 .badge.danger { background: #ececec; color: var(--danger); }
 .neg { color: var(--danger); font-weight: 700; }
 
@@ -546,7 +537,7 @@ input[type="checkbox"] {
     width: 22px;
     height: 22px;
   }
-  .card, .panel {
+  .card {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -608,7 +599,6 @@ input[type="checkbox"] {
     color: #ffffff;
     text-decoration: none;
     background: transparent;
-    opacity: 1;
     font-weight: 700;
   }
 

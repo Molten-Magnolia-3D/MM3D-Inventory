@@ -103,7 +103,7 @@ async function fetchWasm(locator: (file: string) => string): Promise<Uint8Array>
   throw new Error(`Could not load the SQLite engine. Tried: ${errors.join("; ")}`);
 }
 
-export async function loadSql(
+async function loadSql(
   locateFile?: (file: string) => string,
   wasmBinary?: Uint8Array | ArrayBuffer | null,
 ): Promise<SqlJsStatic> {
@@ -145,10 +145,6 @@ export async function loadSql(
     sqlLoading = null;
     throw err;
   }
-}
-
-export function resetSqlModule(): void {
-  sqlModule = null;
 }
 
 type LocRow = {
@@ -307,7 +303,7 @@ function mapSpool(row: SpoolRow): Spool {
 }
 
 export class Inventory {
-  readonly db: Db;
+  private readonly db: Db;
   private persist: (bytes: Uint8Array) => Promise<void> | void;
   readOnly = false;
   readOnlyReason: string | null = null;
@@ -334,7 +330,7 @@ export class Inventory {
     return inv;
   }
 
-  migrate(): void {
+  private migrate(): void {
     this.db.exec(SCHEMA_SQL);
     this.ensureColumn("items", "variant", "TEXT");
     const rev = this.db.get<{ value: string }>(
@@ -367,7 +363,7 @@ export class Inventory {
     return this.db.export();
   }
 
-  markDirty(): void {
+  private markDirty(): void {
     const settings = this.getSettings();
     settings.dirty = true;
     settings.rev += 1;
@@ -596,42 +592,6 @@ export class Inventory {
     );
     this.markDirty();
     return loc;
-  }
-
-  updateLocation(
-    id: string,
-    patch: Partial<Pick<Location, "name" | "type" | "area" | "parentId" | "barcode" | "archived">>,
-  ): Location {
-    this.assertWritable();
-    const current = this.getLocation(id);
-    if (!current) throw new Error("Location not found.");
-    const next = {
-      ...current,
-      ...patch,
-      name: patch.name?.trim() ?? current.name,
-      barcode:
-        patch.barcode === undefined
-          ? current.barcode
-          : patch.barcode
-            ? normalizeBarcode(patch.barcode)
-            : null,
-      updatedAt: nowIso(),
-    };
-    this.db.run(
-      `UPDATE locations SET parent_id=?, name=?, type=?, area=?, barcode=?, archived=?, updated_at=? WHERE id=?`,
-      [
-        next.parentId,
-        next.name,
-        next.type,
-        next.area,
-        next.barcode,
-        next.archived ? 1 : 0,
-        next.updatedAt,
-        id,
-      ],
-    );
-    this.markDirty();
-    return next;
   }
 
   listItems(opts?: { type?: ItemType; query?: string; includeArchived?: boolean }): Item[] {
@@ -896,7 +856,7 @@ export class Inventory {
     });
   }
 
-  deleteLocation(id: string): void {
+  private deleteLocation(id: string): void {
     this.assertWritable();
     const loc = this.getLocation(id);
     if (!loc) throw new Error("Location not found.");
@@ -1210,7 +1170,7 @@ export class Inventory {
       .map(mapBom);
   }
 
-  allBomMap(): Map<string, BomLine[]> {
+  private allBomMap(): Map<string, BomLine[]> {
     const map = new Map<string, BomLine[]>();
     for (const line of this.db.all<BomRow>("SELECT * FROM kit_bom").map(mapBom)) {
       const list = map.get(line.kitId) ?? [];
@@ -1220,7 +1180,7 @@ export class Inventory {
     return map;
   }
 
-  stockMap(): Map<string, number> {
+  private stockMap(): Map<string, number> {
     const map = new Map<string, number>();
     for (const row of this.db.all<{ item_id: string; t: number }>(
       "SELECT item_id, COALESCE(SUM(qty),0) as t FROM stock GROUP BY item_id",
@@ -1230,7 +1190,7 @@ export class Inventory {
     return map;
   }
 
-  filamentGramsByMaterial(): { byMaterial: Map<string, number>; total: number } {
+  private filamentGramsByMaterial(): { byMaterial: Map<string, number>; total: number } {
     const byMaterial = new Map<string, number>();
     let total = 0;
     for (const spool of this.listSpools()) {
@@ -1243,7 +1203,7 @@ export class Inventory {
     return { byMaterial, total };
   }
 
-  avgFilamentCostPerGram(): number {
+  private avgFilamentCostPerGram(): number {
     const spools = this.listSpools().filter((s) => !s.isEmpty && s.remainingGrams > 0);
     if (!spools.length) return 0;
     const totalGrams = spools.reduce((s, p) => s + p.remainingGrams, 0);
@@ -1456,7 +1416,7 @@ export class Inventory {
     return picks;
   }
 
-  autoAllocate(itemId: string, qty: number): StockAllocation[] {
+  private autoAllocate(itemId: string, qty: number): StockAllocation[] {
     const lots = this.db.all<StockRow>(
       `SELECT item_id as itemId, location_id as locationId, qty, updated_at as updatedAt FROM stock WHERE item_id = ?`,
       [itemId],

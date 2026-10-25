@@ -8,18 +8,9 @@ import {
 import type { BomLine, ItemType, LocationArea, LocationType } from "./types";
 import { slugSku } from "./util";
 
-export const CSV_SECTIONS = [
-  "locations",
-  "items",
-  "stock",
-  "kits",
-  "bom",
-  "spools",
-] as const;
-
 type Row = Record<string, string>;
 
-export const TEMPLATE_HEADER = [
+const TEMPLATE_HEADER = [
   "section",
   "sku",
   "name",
@@ -56,7 +47,7 @@ function row(partial: Record<string, string | number>): Row {
   return out;
 }
 
-export const TEMPLATE_ROWS: Row[] = [
+const TEMPLATE_ROWS: Row[] = [
   row({ section: "locations", name: "Workshop", type: "building", area: "hardware", path: "Workshop", barcode: "LOC-WS" }),
   row({
     section: "locations",
@@ -212,7 +203,7 @@ function canonicalHeader(header: string): string {
   return HEADER_ALIASES[key] ?? key;
 }
 
-export function parseCsvTable(csvText: string): { headers: string[]; rows: Row[] } {
+function parseCsvTable(csvText: string): { headers: string[]; rows: Row[] } {
   const text = csvText.replace(/^\uFEFF/, "").replace(/^sep=.*\r?\n/i, "");
   const parsed = Papa.parse<Row>(text, {
     header: true,
