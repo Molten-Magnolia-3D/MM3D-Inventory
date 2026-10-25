@@ -231,7 +231,13 @@ function roofParts(property: Property, wallScale: number): MeshPart[] {
 
 export function buildHouse(
   property: Property,
-  options?: { print?: PrintProfile; includeLot?: boolean; storyGap?: number },
+  options?: {
+    print?: PrintProfile
+    includeLot?: boolean
+    storyGap?: number
+    onlyStoryId?: string
+    includeRoof?: boolean
+  },
 ): MeshPart[] {
   const print = options?.print
   const storyGap = options?.storyGap ?? 0
@@ -239,6 +245,9 @@ export function buildHouse(
     ? Math.max(1, print.minWallMm / ((304.8 / print.scale) * EXTERIOR_WALL))
     : 1
   const parts: MeshPart[] = []
+  const stories = options?.onlyStoryId
+    ? property.stories.filter((story) => story.id === options.onlyStoryId)
+    : property.stories
 
   if (options?.includeLot !== false && !print) {
     parts.push(
@@ -256,7 +265,8 @@ export function buildHouse(
     )
   }
 
-  property.stories.forEach((story, index) => {
+  stories.forEach((story) => {
+    const index = property.stories.findIndex((entry) => entry.id === story.id)
     const lift = index * storyGap
     const base = storyElevation(property, story.id) + lift
     const floorY = base + story.slab
@@ -278,7 +288,8 @@ export function buildHouse(
     parts.push(...wallPieces(property, story.id, story.height, floorY, wallScale))
   })
 
-  if (!print || print.includeRoof) {
+  const wantRoof = options?.includeRoof ?? (!print || print.includeRoof)
+  if (wantRoof) {
     const roofLift = storyGap * Math.max(0, property.stories.length - 1)
     parts.push(
       ...roofParts(property, wallScale).map((part) => ({

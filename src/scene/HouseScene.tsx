@@ -43,6 +43,14 @@ function ArchitecturalPart({
   )
 }
 
+function focusPoint(property: Property, activeStoryId: string | null) {
+  const rooms = activeStoryId ? roomsOnStory(property, activeStoryId) : property.rooms
+  const focus = [...rooms].sort((a, b) => b.width * b.depth - a.width * a.depth)[0]
+  const cx = focus ? focus.x + focus.width / 2 : property.lotWidth / 2
+  const cz = focus ? focus.z + focus.depth / 2 : property.lotDepth / 2
+  return { focus, cx, cz }
+}
+
 function CameraRig({
   property,
   viewMode,
@@ -54,22 +62,23 @@ function CameraRig({
 }) {
   const { camera } = useThree()
   useEffect(() => {
-    const rooms = activeStoryId ? roomsOnStory(property, activeStoryId) : property.rooms
-    const focus = rooms[0]
-    const cx = focus ? focus.x + focus.width / 2 : property.lotWidth / 2
-    const cz = focus ? focus.z + focus.depth / 2 : property.lotDepth / 2
+    const { focus, cx, cz } = focusPoint(property, activeStoryId)
     const story = property.stories.find((entry) => entry.id === activeStoryId) ?? property.stories[0]
-    const eye = story ? storyElevation(property, story.id) + story.slab + 5.4 : 5.4
-    if (viewMode === 'walk') {
-      camera.position.set(cx + 8, eye, cz + 10)
+    const floor = story ? storyElevation(property, story.id) + story.slab : 0
+    if (viewMode === 'walk' && focus) {
+      const eye = floor + 5.2
+      camera.position.set(cx, eye, focus.z + Math.min(2.8, focus.depth * 0.28))
+      camera.lookAt(cx, eye, focus.z + focus.depth * 0.78)
     } else if (viewMode === 'print') {
       camera.position.set(property.lotWidth * 0.9, 48, property.lotDepth * 1.1)
+      camera.lookAt(cx, floor + 4, cz)
     } else if (viewMode === 'dollhouse') {
       camera.position.set(property.lotWidth * 0.15, 56, property.lotDepth * 1.15)
+      camera.lookAt(cx, 8, cz)
     } else {
       camera.position.set(property.lotWidth * 0.2, 42, property.lotDepth * 1.05)
+      camera.lookAt(cx, floor + 4, cz)
     }
-    camera.lookAt(cx, story ? storyElevation(property, story.id) + 4 : 4, cz)
   }, [camera, property, viewMode, activeStoryId])
   return null
 }
@@ -77,20 +86,28 @@ function CameraRig({
 export function HouseScene({ property, viewMode, activeStoryId, print, selectedId }: Props) {
   const storyGap = viewMode === 'dollhouse' ? 10 : 0
   const printLike = viewMode === 'print'
+  const walk = viewMode === 'walk'
+  const { focus, cx } = focusPoint(property, activeStoryId)
+  const story = property.stories.find((entry) => entry.id === activeStoryId) ?? property.stories[0]
+  const eyeY = story ? storyElevation(property, story.id) + story.slab + 5.2 : 5.2
   const parts = useMemo(
     () =>
       buildHouse(property, {
         storyGap,
-        includeLot: !printLike,
+        includeLot: !printLike && !walk,
+        includeRoof: !walk,
+        onlyStoryId: walk ? activeStoryId ?? undefined : undefined,
         print: printLike
           ? { ...print, includeFurniture: print.includeFurniture }
           : undefined,
       }),
-    [property, storyGap, printLike, print],
+    [property, storyGap, printLike, print, walk, activeStoryId],
   )
 
   const architecture = parts.filter((part) => part.role !== 'furniture')
-  const furniture = printLike && !print.includeFurniture ? [] : property.assets
+  const furniture = (printLike && !print.includeFurniture ? [] : property.assets).filter((placed) =>
+    walk ? placed.storyId === activeStoryId : true,
+  )
 
   return (
     <>
@@ -136,6 +153,16 @@ export function HouseScene({ property, viewMode, activeStoryId, print, selectedI
           )
         })}
       </group>
+      {walk && story ? (
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0] as [number, number, number]}
+          position={[property.lotWidth / 2, storyElevation(property, story.id) + story.slab - 0.04, property.lotDepth / 2] as [number, number, number]}
+          receiveShadow
+        >
+          <planeGeometry args={[property.lotWidth + 20, property.lotDepth + 20]} />
+          <meshStandardMaterial color="#d8e0cc" />
+        </mesh>
+      ) : null}
       {printLike ? (
         <mesh rotation={[-Math.PI / 2, 0, 0] as [number, number, number]} position={[property.lotWidth / 2, -0.2, property.lotDepth / 2] as [number, number, number]} receiveShadow>
           <planeGeometry args={[120, 120]} />
@@ -145,20 +172,17 @@ export function HouseScene({ property, viewMode, activeStoryId, print, selectedI
         <ContactShadows position={[0, -0.02, 0] as [number, number, number]} opacity={0.32} scale={180} blur={2.2} />
       )}
       <OrbitControls
+        key={`${viewMode}-${activeStoryId}`}
         makeDefault
         enableDamping
-        maxPolarAngle={viewMode === 'walk' ? Math.PI / 2.05 : Math.PI / 2.1}
-        minDistance={viewMode === 'walk' ? 2 : 8}
-        maxDistance={viewMode === 'walk' ? 22 : 160}
-        target={[
-          property.lotWidth / 2,
-          viewMode === 'walk'
-            ? (property.stories.find((story) => story.id === activeStoryId)
-                ? storyElevation(property, activeStoryId ?? property.stories[0].id) + 5.2
-                : 5.2)
-            : 4,
-          property.lotDepth / 2,
-        ]}
+        maxPolarAngle={walk ? Math.PI / 1.92 : Math.PI / 2.1}
+        minDistance={walk ? 1.2 : 8}
+        maxDistance={walk ? 36 : 160}
+        target={
+          walk && focus
+            ? [cx, eyeY, focus.z + focus.depth * 0.72]
+            : [property.lotWidth / 2, walk ? eyeY : 4, property.lotDepth / 2]
+        }
       />
     </>
   )
