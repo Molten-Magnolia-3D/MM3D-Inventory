@@ -89,7 +89,11 @@ export default function KitsPage() {
                 <input value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} required />
               </Field>
               <Field label="Barcode">
-                <input value={draft.barcode} onChange={(e) => setDraft({ ...draft, barcode: e.target.value })} />
+                <input
+                  value={draft.barcode}
+                  onChange={(e) => setDraft({ ...draft, barcode: e.target.value })}
+                  placeholder="Leave blank to use the SKU"
+                />
               </Field>
             </div>
             <Field label="Name">

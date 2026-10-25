@@ -184,4 +184,29 @@ describe("inventory v1", () => {
     expect(() => inv.addItemByBarcode("BIN-A1")).toThrow(/already a location/i);
     expect(inv.listItems()).toEqual([]);
   });
+
+  it("creates a barcode from the SKU and can assign it to parts that were missing one", async () => {
+    const inv = await freshInventory();
+    const unnamed = inv.createItem({ name: "Canopy latch", type: "part" });
+    expect(unnamed.sku).toBe("CANOPY-LATCH");
+    expect(unnamed.barcode).toBe("CANOPY-LATCH");
+
+    const existing = inv.createItem({ sku: "WING-SPAR", name: "Wing spar", type: "part" });
+    expect(existing.barcode).toBe("WING-SPAR");
+    inv.updateItem(existing.id, { barcode: null });
+    expect(inv.getItem(existing.id)?.barcode).toBeNull();
+    expect(inv.labelCandidates().some((row) => row.id === existing.id && row.barcode === "")).toBe(true);
+
+    const result = inv.assignSkuBarcodes({ itemIds: [existing.id, unnamed.id] });
+    expect(result.assigned).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(inv.getItem(existing.id)?.barcode).toBe("WING-SPAR");
+  });
+
+  it("does not reuse a location barcode when assigning from SKU", async () => {
+    const inv = await freshInventory();
+    inv.createLocation({ name: "A1", type: "bin", area: "hardware", barcode: "SPAR" });
+    const part = inv.createItem({ sku: "SPAR", name: "Wing spar", type: "part" });
+    expect(part.barcode).toBe("SPAR-2");
+  });
 });

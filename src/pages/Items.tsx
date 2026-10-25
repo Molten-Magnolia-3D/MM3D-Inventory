@@ -5,6 +5,7 @@ import { useInventory } from "../state";
 import { Field, Modal, Money } from "../ui";
 import CameraScan from "../CameraScan";
 import { cameraScanAvailable, normalizeScannedCode } from "../scan";
+import { skuFromName } from "../core/util";
 import type { Item, ItemType } from "../core/types";
 
 type Draft = {
@@ -263,6 +264,17 @@ export default function ItemsPage() {
     }
   }
 
+  function assignSelectedFromSku() {
+    setError(null);
+    try {
+      const result = api.assignSkuBarcodes({ itemIds: selectedIds });
+      if (!result.assigned) setError("Those items already have barcodes.");
+      refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   function openEdit(item: Item) {
     setError(null);
     setAdding(false);
@@ -308,7 +320,10 @@ export default function ItemsPage() {
       <div className="page-head">
         <div>
           <h1>Items</h1>
-          <p>Scan barcodes to add several at once, then edit them in scan order. Click a row to edit it here.</p>
+          <p>
+            Scan barcodes to add several at once, then edit them in scan order. Parts without a shop barcode can use
+            their SKU — select them and assign it here.
+          </p>
         </div>
         <button className="btn" onClick={openAdd}>
           Add items
@@ -329,6 +344,14 @@ export default function ItemsPage() {
           <span className="count">{selectedIds.length} selected</span>
           <button className="btn secondary" type="button" onClick={openBulkOrEdit}>
             {selectedIds.length === 1 ? "Edit" : "Edit selected"}
+          </button>
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={!items.some((item) => selected[item.id] && !item.barcode)}
+            onClick={assignSelectedFromSku}
+          >
+            Assign barcode from SKU
           </button>
           <button className="btn danger" type="button" onClick={() => setConfirmDelete(true)}>
             Delete
@@ -574,10 +597,32 @@ function ItemFields({
     <>
       <div className="form-grid">
         <Field label="SKU">
-          <input value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} required />
+          <input
+            value={draft.sku}
+            onChange={(e) => setDraft({ ...draft, sku: e.target.value })}
+            placeholder="Leave blank to generate from the name"
+          />
         </Field>
         <Field label="Barcode">
-          <input value={draft.barcode} onChange={(e) => setDraft({ ...draft, barcode: e.target.value })} />
+          <div className="row">
+            <input
+              value={draft.barcode}
+              onChange={(e) => setDraft({ ...draft, barcode: e.target.value })}
+              placeholder="Leave blank to use the SKU"
+            />
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  barcode: (draft.sku.trim() || skuFromName(draft.name)).trim(),
+                })
+              }
+            >
+              Use SKU
+            </button>
+          </div>
         </Field>
         <Field label="Name">
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} required />
@@ -640,6 +685,9 @@ function ItemRow({
         <Link to={`/items/${item.id}`} onClick={(e) => e.stopPropagation()}>
           {item.sku}
         </Link>
+        <div className="empty" style={{ padding: 0 }}>
+          {item.barcode || "no barcode"}
+        </div>
       </td>
       <td>{item.name}</td>
       <td>{item.variant || "—"}</td>

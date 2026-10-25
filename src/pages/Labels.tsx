@@ -3,17 +3,24 @@ import { useInventory } from "../state";
 import { buildLabelPdf } from "../core/labels";
 
 export default function LabelsPage() {
-  const { inv, platform } = useInventory();
+  const { inv, platform, refresh } = useInventory();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const rows = inv?.labelCandidates() ?? [];
   const picked = useMemo(
     () => rows.filter((r) => selected[`${r.kind}:${r.id}`]),
     [rows, selected],
   );
+  const printable = picked.filter((r) => r.barcode);
+  const missingSelected = picked.filter(
+    (r) => !r.barcode && (r.kind === "item" || r.kind === "kit"),
+  );
+  const missingCount = rows.filter((r) => !r.barcode && (r.kind === "item" || r.kind === "kit")).length;
   const allVisibleSelected = rows.length > 0 && picked.length === rows.length;
   if (!inv) return null;
+  const api = inv;
 
   function toggleAll(on: boolean) {
     if (!on) {
@@ -25,12 +32,30 @@ export default function LabelsPage() {
     setSelected(next);
   }
 
+  function assignFromSku() {
+    setError(null);
+    setNotice(null);
+    const itemIds = missingSelected.filter((r) => r.kind === "item").map((r) => r.id);
+    const kitIds = missingSelected.filter((r) => r.kind === "kit").map((r) => r.id);
+    try {
+      const result = api.assignSkuBarcodes({ itemIds, kitIds });
+      setNotice(
+        result.assigned
+          ? `Assigned ${result.assigned} barcode${result.assigned === 1 ? "" : "s"} from SKU.`
+          : "Those already have barcodes.",
+      );
+      refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function exportPdf() {
     setBusy(true);
     setError(null);
     try {
       const pdf = await buildLabelPdf(
-        picked.map((r) => ({ barcode: r.barcode, title: r.title, subtitle: r.subtitle })),
+        printable.map((r) => ({ barcode: r.barcode, title: r.title, subtitle: r.subtitle })),
       );
       await platform.saveFile("mm3d-labels.pdf", pdf, "application/pdf");
     } catch (err) {
@@ -45,7 +70,9 @@ export default function LabelsPage() {
       <div className="page-head">
         <div>
           <h1>Labels</h1>
-          <p>Letter sheet, 30-up. Code 128 for USB scanners, plus a QR with the same value.</p>
+          <p>
+            Letter sheet, 30-up. Intermediate parts can use their SKU as the barcode — assign it here, then print.
+          </p>
         </div>
         <div className="row">
           <button
@@ -56,11 +83,27 @@ export default function LabelsPage() {
           >
             {allVisibleSelected ? "Clear selection" : "Select all"}
           </button>
-          <button className="btn" disabled={!picked.length || busy} onClick={() => void exportPdf()}>
-            Export {picked.length} label{picked.length === 1 ? "" : "s"} to PDF
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={!missingSelected.length}
+            onClick={assignFromSku}
+          >
+            Assign SKU as barcode{missingSelected.length ? ` · ${missingSelected.length}` : ""}
+          </button>
+          <button className="btn" disabled={!printable.length || busy} onClick={() => void exportPdf()}>
+            Export {printable.length} label{printable.length === 1 ? "" : "s"} to PDF
           </button>
         </div>
       </div>
+      {missingCount > 0 && (
+        <p className="empty" style={{ paddingTop: 0, marginBottom: 12 }}>
+          {missingCount} item{missingCount === 1 ? "" : "s"} or kit{missingCount === 1 ? "" : "s"} still need a
+          barcode. Select them and use Assign SKU as barcode — shop parts without a Squarespace code still get a
+          scannable label.
+        </p>
+      )}
+      {notice && <div className="warn-banner">{notice}</div>}
       {error && <div className="danger-banner">{error}</div>}
       <div className="card">
         <table>
@@ -100,13 +143,15 @@ export default function LabelsPage() {
                       {row.subtitle}
                     </div>
                   </td>
-                  <td>{row.barcode}</td>
+                  <td>
+                    {row.barcode || <span className="badge">needs barcode</span>}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="empty">Give items, bins, kits, or spools a barcode first.</p>}
+        {rows.length === 0 && <p className="empty">Add items or bins first, then assign barcodes from SKUs.</p>}
       </div>
     </div>
   );

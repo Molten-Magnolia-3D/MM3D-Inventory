@@ -50,6 +50,7 @@ import {
   nowIso,
   roundGrams,
   roundMoney,
+  skuFromName,
   slugSku,
   sqlAssetUrl,
   withTimeout,
@@ -695,7 +696,7 @@ export class Inventory {
   }
 
   createItem(input: {
-    sku: string;
+    sku?: string | null;
     name: string;
     variant?: string | null;
     type: ItemType;
@@ -705,21 +706,22 @@ export class Inventory {
     notes?: string | null;
   }): Item {
     this.assertWritable();
+    const name = input.name.trim();
+    if (!name) throw new Error("Item name is required.");
+    const sku = slugSku(input.sku ?? "") || this.uniqueSku(skuFromName(name));
     const item: Item = {
       id: newId(),
-      sku: slugSku(input.sku),
-      name: input.name.trim(),
+      sku,
+      name,
       variant: input.variant?.trim() || null,
       type: input.type,
-      barcode: input.barcode ? normalizeBarcode(input.barcode) : null,
+      barcode: input.barcode ? normalizeBarcode(input.barcode) : this.uniqueBarcode(sku),
       costUsd: roundMoney(input.costUsd ?? 0),
       sellPriceUsd: roundMoney(input.sellPriceUsd ?? 0),
       notes: input.notes?.trim() || null,
       archived: false,
       updatedAt: nowIso(),
     };
-    if (!item.sku) throw new Error("SKU is required.");
-    if (!item.name) throw new Error("Item name is required.");
     try {
       this.db.run(
         `INSERT INTO items(id, sku, name, variant, type, barcode, cost_usd, sell_price_usd, notes, archived, updated_at)
@@ -838,6 +840,46 @@ export class Inventory {
     return { item, created: true };
   }
 
+  assignSkuBarcodes(opts: { itemIds?: string[]; kitIds?: string[] }): { assigned: number; skipped: number } {
+    this.assertWritable();
+    const itemIds = [...new Set((opts.itemIds ?? []).filter(Boolean))];
+    const kitIds = [...new Set((opts.kitIds ?? []).filter(Boolean))];
+    return this.db.transaction(() => {
+      let assigned = 0;
+      let skipped = 0;
+      for (const id of itemIds) {
+        const item = this.getItem(id);
+        if (!item) {
+          skipped += 1;
+          continue;
+        }
+        if (item.barcode) {
+          skipped += 1;
+          continue;
+        }
+        const sku = item.sku || this.uniqueSku(skuFromName(item.name));
+        if (!item.sku) this.updateItem(id, { sku });
+        this.updateItem(id, { barcode: this.uniqueBarcode(sku, { itemId: id }) });
+        assigned += 1;
+      }
+      for (const id of kitIds) {
+        const kit = this.getKit(id);
+        if (!kit) {
+          skipped += 1;
+          continue;
+        }
+        if (kit.barcode) {
+          skipped += 1;
+          continue;
+        }
+        this.updateKit(id, { barcode: this.uniqueBarcode(kit.sku, { kitId: id }) });
+        assigned += 1;
+      }
+      if (assigned) this.markDirty();
+      return { assigned, skipped };
+    });
+  }
+
   addItemsFromBarcodes(codes: string[]): Item[] {
     this.assertWritable();
     const seen = new Set<string>();
@@ -873,6 +915,22 @@ export class Inventory {
     if (!this.getItemBySku(root)) return root;
     let n = 2;
     while (this.getItemBySku(`${root}-${n}`)) n += 1;
+    return `${root}-${n}`;
+  }
+
+  private barcodeTaken(code: string, except?: { itemId?: string; kitId?: string }): boolean {
+    const hit = this.lookup(code);
+    if (hit.kind === "none") return false;
+    if (hit.kind === "item" && except?.itemId && hit.item.id === except.itemId) return false;
+    if (hit.kind === "kit" && except?.kitId && hit.kit.id === except.kitId) return false;
+    return true;
+  }
+
+  private uniqueBarcode(base: string, except?: { itemId?: string; kitId?: string }): string {
+    const root = normalizeBarcode(base) || "PART";
+    if (!this.barcodeTaken(root, except)) return root;
+    let n = 2;
+    while (this.barcodeTaken(`${root}-${n}`, except)) n += 1;
     return `${root}-${n}`;
   }
 
@@ -1246,6 +1304,7 @@ export class Inventory {
       updatedAt: nowIso(),
     };
     if (!kit.sku || !kit.name) throw new Error("Kit SKU and name are required.");
+    if (!kit.barcode) kit.barcode = this.uniqueBarcode(kit.sku, { kitId: kit.id });
     this.db.run(
       `INSERT INTO kits(id, sku, name, barcode, sell_price_usd, notes, archived, updated_at)
        VALUES(?,?,?,?,?,?,?,?)`,
@@ -1924,21 +1983,19 @@ export class Inventory {
       subtitle: string;
     }> = [];
     for (const item of this.listItems()) {
-      if (!item.barcode) continue;
       out.push({
         id: item.id,
         kind: "item",
-        barcode: item.barcode,
+        barcode: item.barcode ?? "",
         title: item.name,
         subtitle: item.variant ? `${item.sku} · ${item.variant}` : item.sku,
       });
     }
     for (const kit of this.listKits()) {
-      if (!kit.barcode) continue;
       out.push({
         id: kit.id,
         kind: "kit",
-        barcode: kit.barcode,
+        barcode: kit.barcode ?? "",
         title: kit.name,
         subtitle: kit.sku,
       });

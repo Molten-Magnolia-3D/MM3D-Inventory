@@ -22,6 +22,16 @@ export function slugSku(value: string): string {
   return value.trim().toUpperCase();
 }
 
+/** Shop-internal SKU for a part that only has a name (no Squarespace code). */
+export function skuFromName(name: string): string {
+  const slug = name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug.slice(0, 32) || "PART";
+}
+
 export function itemLabel(item: { name: string; variant?: string | null }): string {
   return item.variant ? `${item.name} · ${item.variant}` : item.name;
 }

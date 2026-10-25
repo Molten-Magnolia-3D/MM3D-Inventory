@@ -213,7 +213,16 @@ export default function ItemDetailPage() {
                 </select>
               </Field>
               <Field label="Barcode">
-                <input value={edit.barcode} onChange={(e) => setEdit({ ...edit, barcode: e.target.value })} />
+                <div className="row">
+                  <input value={edit.barcode} onChange={(e) => setEdit({ ...edit, barcode: e.target.value })} />
+                  <button
+                    className="btn secondary"
+                    type="button"
+                    onClick={() => setEdit({ ...edit, barcode: item.sku })}
+                  >
+                    Use SKU
+                  </button>
+                </div>
               </Field>
               <Field label="Cost (USD)">
                 <input value={edit.costUsd} onChange={(e) => setEdit({ ...edit, costUsd: e.target.value })} />

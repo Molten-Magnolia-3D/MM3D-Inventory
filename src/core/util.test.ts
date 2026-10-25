@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asUint8Array, itemLabel, sqlAssetUrl, withTimeout } from "./util";
+import { asUint8Array, itemLabel, skuFromName, sqlAssetUrl, withTimeout } from "./util";
 
 describe("boot helpers", () => {
   it("coerces IPC Buffer clones into Uint8Array", () => {
@@ -40,5 +40,11 @@ describe("boot helpers", () => {
     expect(itemLabel({ name: "Memorabilia mug", variant: "VMA-231 · 11 oz" })).toBe(
       "Memorabilia mug · VMA-231 · 11 oz",
     );
+  });
+
+  it("builds a SKU from a part name that has no shop code", () => {
+    expect(skuFromName("Canopy latch")).toBe("CANOPY-LATCH");
+    expect(skuFromName("  231 squadron decals  ")).toBe("231-SQUADRON-DECALS");
+    expect(skuFromName("***")).toBe("PART");
   });
 });
