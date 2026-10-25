@@ -4,8 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { APP_USER_MODEL_ID, windowIconPath } from "./icon.js";
 import { fileInDist } from "./paths.js";
 import { setupUpdater } from "./updater.js";
+
+if (process.platform === "win32") {
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = !app.isPackaged;
@@ -70,15 +75,6 @@ function registerRendererProtocol() {
   });
 }
 
-function windowIcon(): string | undefined {
-  const candidates = [
-    path.join(process.cwd(), "build", "icon.ico"),
-    path.join(__dirname, "..", "build", "icon.ico"),
-    path.join(process.resourcesPath, "icon.ico"),
-  ];
-  return candidates.find((file) => fs.existsSync(file));
-}
-
 function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
@@ -87,7 +83,10 @@ function createWindow() {
     minHeight: 720,
     backgroundColor: "#ffffff",
     title: "MM3D Inventory",
-    icon: windowIcon(),
+    icon: windowIconPath({
+      dirname: __dirname,
+      resourcesPath: process.resourcesPath,
+    }),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

@@ -61,7 +61,14 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
+      "build/icon.ico",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
     ],
     "publish": {
       "provider": "github",
@@ -70,7 +77,7 @@
     },
     "win": {
       "icon": "build/icon.ico",
-      "signAndEditExecutable": false,
+      "signExecutable": false,
       "target": [
         {
           "target": "nsis",
@@ -91,6 +98,8 @@
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "MM3D Inventory",
       "uninstallDisplayName": "MM3D Inventory",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "artifactName": "MM3D-Inventory-Setup-${version}.${ext}"
     },
     "portable": {
